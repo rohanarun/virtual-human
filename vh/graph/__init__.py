@@ -25,4 +25,11 @@ is intentionally not imported here, keeping the basic graph API dependency-free.
 
 from .core import Edge, Graph, Node, Schema  # noqa: F401
 from .contracts import ContractError, ModelRegistry, ModelSpec, PortSpec, Quantity  # noqa: F401
+from .evidence import (  # noqa: F401
+    EvidenceInput,
+    OutputEnvelope,
+    Uncertainty,
+    execute_evidence,
+    execute_evidence_envelope,
+)
 from . import algorithms  # noqa: F401

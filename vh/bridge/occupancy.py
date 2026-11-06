@@ -38,6 +38,153 @@ def equilibrium_occupancy(cu_nm, kd_nm):
     return cu / (cu + kd_nm)
 
 
+def competitive_equilibrium_occupancy(cu_a_nm, kd_a_nm: float, cu_b_nm, kd_b_nm: float) -> dict:
+    """Exact Gaddum competitive equilibrium for two ligands sharing one receptor or groove.
+
+    Given unbound concentrations Cu_A, Cu_B >= 0 and dissociation constants Kd_A, Kd_B > 0:
+        O_A = (Cu_A / Kd_A) / (1 + Cu_A / Kd_A + Cu_B / Kd_B)
+        O_B = (Cu_B / Kd_B) / (1 + Cu_A / Kd_A + Cu_B / Kd_B)
+        O_total = O_A + O_B
+    """
+    if kd_a_nm <= 0 or kd_b_nm <= 0 or not (np.isfinite(kd_a_nm) and np.isfinite(kd_b_nm)):
+        raise ValueError("dissociation constants kd_a_nm and kd_b_nm must be finite and positive")
+    ca = np.asarray(cu_a_nm, dtype=float)
+    cb = np.asarray(cu_b_nm, dtype=float)
+    if np.any(~np.isfinite(ca)) or np.any(~np.isfinite(cb)) or np.any(ca < 0) or np.any(cb < 0):
+        raise ValueError("unbound concentrations must be finite and nonnegative")
+    alpha = ca / float(kd_a_nm)
+    beta = cb / float(kd_b_nm)
+    denom = 1.0 + alpha + beta
+    occ_a = alpha / denom
+    occ_b = beta / denom
+    occ_total = (alpha + beta) / denom
+    if np.ndim(ca) == 0 and np.ndim(cb) == 0:
+        return {
+            "occupancy_a": float(occ_a),
+            "occupancy_b": float(occ_b),
+            "occupancy_total": float(occ_total),
+            "free_receptor_fraction": float(1.0 / denom),
+        }
+    return {
+        "occupancy_a": occ_a,
+        "occupancy_b": occ_b,
+        "occupancy_total": occ_total,
+        "free_receptor_fraction": 1.0 / denom,
+    }
+
+
+def shared_core_identifiability_locus(
+    target_total_occupancy: float,
+    kd_a_nm: float,
+    kd_b_nm: float,
+    cu_a_nm: float,
+) -> float:
+    """Concentration Cu_B of ligand B yielding target_total_occupancy alongside Cu_A.
+
+    When two cross-reactive ligands (for example paralogous peptides sharing a 9-mer
+    MHC-II binding core) contribute equally to a bulk occupancy or activation readout
+    O_total = (Cu_A/Kd_A + Cu_B/Kd_B) / (1 + Cu_A/Kd_A + Cu_B/Kd_B), any pair (Cu_A, Cu_B)
+    on the affine locus Cu_A/Kd_A + Cu_B/Kd_B = O_total / (1 - O_total) produces the
+    identical total occupancy.
+    """
+    if not (0.0 <= target_total_occupancy < 1.0 and np.isfinite(target_total_occupancy)):
+        raise ValueError("target_total_occupancy must be finite and in [0, 1)")
+    if kd_a_nm <= 0 or kd_b_nm <= 0 or not (np.isfinite(kd_a_nm) and np.isfinite(kd_b_nm)):
+        raise ValueError("kd_a_nm and kd_b_nm must be finite and positive")
+    if cu_a_nm < 0 or not np.isfinite(cu_a_nm):
+        raise ValueError("cu_a_nm must be finite and nonnegative")
+    total_normalized_affinity = target_total_occupancy / (1.0 - target_total_occupancy)
+    remaining_affinity = total_normalized_affinity - (cu_a_nm / kd_a_nm)
+    if remaining_affinity < -1e-15:
+        raise ValueError("cu_a_nm alone exceeds target_total_occupancy")
+    return float(max(0.0, remaining_affinity) * kd_b_nm)
+
+
+def competitive_kinetic_occupancy(
+    t_h,
+    cu_a_nm,
+    kd_a_nm: float,
+    koff_a_per_h: float,
+    cu_b_nm,
+    kd_b_nm: float,
+    koff_b_per_h: float,
+    oa0: float = 0.0,
+    ob0: float = 0.0,
+) -> dict:
+    """Exact piecewise 2x2 matrix-exponential (Motulsky-Mahan) solution for competitive kinetics.
+
+    Solves on each interval [t_{i-1}, t_i] with midpoint unbound concentrations:
+        dO_A/dt = kon_A * Cu_A * (1 - O_A - O_B) - koff_A * O_A
+        dO_B/dt = kon_B * Cu_B * (1 - O_A - O_B) - koff_B * O_B
+    where kon_A = koff_A / Kd_A and kon_B = koff_B / Kd_B.
+    """
+    if kd_a_nm <= 0 or kd_b_nm <= 0 or koff_a_per_h <= 0 or koff_b_per_h <= 0:
+        raise ValueError("Kd and koff parameters must be positive")
+    if oa0 < 0 or ob0 < 0 or oa0 + ob0 > 1.0 + 1e-12:
+        raise ValueError("initial occupancies must be nonnegative and sum to at most 1")
+    t = np.asarray(t_h, dtype=float)
+    if t.ndim != 1 or len(t) == 0 or np.any(np.diff(t) < 0):
+        raise ValueError("t_h must be a nonempty 1D nondecreasing array")
+    ca = np.broadcast_to(np.asarray(cu_a_nm, dtype=float), t.shape)
+    cb = np.broadcast_to(np.asarray(cu_b_nm, dtype=float), t.shape)
+    if np.any(ca < 0) or np.any(cb < 0) or np.any(~np.isfinite(ca)) or np.any(~np.isfinite(cb)):
+        raise ValueError("unbound concentrations must be finite and nonnegative")
+
+    kon_a = float(koff_a_per_h) / float(kd_a_nm)
+    kon_b = float(koff_b_per_h) / float(kd_b_nm)
+    k2 = float(koff_a_per_h)
+    k4 = float(koff_b_per_h)
+
+    oa = np.empty_like(t)
+    ob = np.empty_like(t)
+    oa[0] = float(oa0)
+    ob[0] = float(ob0)
+
+    for i in range(1, len(t)):
+        dt = float(t[i] - t[i - 1])
+        if dt == 0.0:
+            oa[i] = oa[i - 1]
+            ob[i] = ob[i - 1]
+            continue
+        c_a = 0.5 * float(ca[i] + ca[i - 1])
+        c_b = 0.5 * float(cb[i] + cb[i - 1])
+        k1 = kon_a * c_a
+        k3 = kon_b * c_b
+        m11 = k1 + k2
+        m12 = k1
+        m21 = k3
+        m22 = k3 + k4
+        det = k1 * k4 + k2 * k3 + k2 * k4
+        oa_inf = (k1 * k4) / det
+        ob_inf = (k2 * k3) / det
+
+        tau = 0.5 * (m11 + m22)
+        half_diff = 0.5 * (m11 - m22)
+        delta = float(np.sqrt(half_diff * half_diff + m12 * m21))
+        lam_minus = tau - delta
+        lam_plus = tau + delta
+        e_minus = float(np.exp(-lam_minus * dt))
+        e_plus = float(np.exp(-lam_plus * dt))
+        c0 = 0.5 * (e_minus + e_plus)
+        if delta * dt >= 1e-8:
+            s_coeff = (e_minus - e_plus) / (2.0 * delta)
+        else:
+            s_coeff = float(np.exp(-tau * dt)) * dt * (1.0 - (delta * dt) ** 2 / 6.0)
+
+        da0 = oa[i - 1] - oa_inf
+        db0 = ob[i - 1] - ob_inf
+        # exp(-M dt) = c0 * I - s_coeff * (M - tau * I)
+        oa[i] = oa_inf + (c0 - s_coeff * half_diff) * da0 - (s_coeff * m12) * db0
+        ob[i] = ob_inf - (s_coeff * m21) * da0 + (c0 + s_coeff * half_diff) * db0
+
+    return {
+        "time_h": t,
+        "occupancy_a": oa,
+        "occupancy_b": ob,
+        "occupancy_total": oa + ob,
+    }
+
+
 def kinetic_occupancy(t_h, cu_nm, kd_nm, koff_per_h, o0=0.0):
     """Exact piecewise solution assuming Cu is constant within each interval."""
     t = np.asarray(t_h, dtype=float)

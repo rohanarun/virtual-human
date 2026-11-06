@@ -1,0 +1,108 @@
+{
+  "evidence_corner_envelope_validation": {
+    "evaluated_corners": 8,
+    "fail_closed_rejections_verified": 3,
+    "occ_a_envelope": [
+      0.2,
+      0.8888888888888888
+    ],
+    "occ_a_exact_rational_envelope": [
+      "3/15",
+      "24/27"
+    ],
+    "occ_a_nominal": 0.6,
+    "occ_a_threshold_0_50_status": "straddles_threshold",
+    "occ_total_envelope": [
+      0.5555555555555556,
+      0.9333333333333333
+    ],
+    "occ_total_exact_rational_low": "5/9",
+    "occ_total_threshold_0_40_status": "above_across_envelope"
+  },
+  "experiment": "2026-11-06-E-competitive-binding-envelopes",
+  "max_equilibrium_abs_error": 1.1102230246251565e-16,
+  "motulsky_mahan_kinetics_validation": {
+    "equilibrium_occupancy_b": 0.2,
+    "grid_points": 301,
+    "max_abs_error_vs_dop853_occupancy_a": 1.9845236565174673e-15,
+    "max_abs_error_vs_dop853_occupancy_b": 2.6867397195928788e-14,
+    "overshoot_amplitude_b": 0.22802786902750533,
+    "reaction_network_conservation_basis": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "reaction_network_max_conservation_drift": 5.995204332975845e-15,
+    "reaction_network_trajectory_max_abs_error": 7.82610781735471e-12,
+    "transient_peak_occupancy_b": 0.42802786902750534,
+    "transient_peak_time_h": 0.4
+  },
+  "rational_equilibrium_cases": [
+    {
+      "case": "balanced_competition",
+      "max_abs_error": 0.0,
+      "occupancy_a_exact": "3/5",
+      "occupancy_b_exact": "1/5",
+      "occupancy_total_exact": "4/5"
+    },
+    {
+      "case": "high_affinity_dominance",
+      "max_abs_error": 0.0,
+      "occupancy_a_exact": "5/8",
+      "occupancy_b_exact": "1/4",
+      "occupancy_total_exact": "7/8"
+    },
+    {
+      "case": "low_occupancy_tail",
+      "max_abs_error": 1.1102230246251565e-16,
+      "occupancy_a_exact": "1/23",
+      "occupancy_b_exact": "2/23",
+      "occupancy_total_exact": "3/23"
+    }
+  ],
+  "shared_core_identifiability_locus": {
+    "equivalent_pairs": [
+      {
+        "cu_a_nm": 0.0,
+        "cu_b_nm": 75.0,
+        "occupancy_a": 0.0,
+        "occupancy_b": 0.75,
+        "occupancy_total": 0.75
+      },
+      {
+        "cu_a_nm": 5.0,
+        "cu_b_nm": 62.5,
+        "occupancy_a": 0.125,
+        "occupancy_b": 0.625,
+        "occupancy_total": 0.75
+      },
+      {
+        "cu_a_nm": 12.5,
+        "cu_b_nm": 43.75,
+        "occupancy_a": 0.3125,
+        "occupancy_b": 0.4375,
+        "occupancy_total": 0.75
+      },
+      {
+        "cu_a_nm": 20.0,
+        "cu_b_nm": 25.0,
+        "occupancy_a": 0.5,
+        "occupancy_b": 0.25,
+        "occupancy_total": 0.75
+      },
+      {
+        "cu_a_nm": 30.0,
+        "cu_b_nm": 0.0,
+        "occupancy_a": 0.75,
+        "occupancy_b": 0.0,
+        "occupancy_total": 0.75
+      }
+    ],
+    "kd_a_nm": 10.0,
+    "kd_b_nm": 25.0,
+    "max_abs_error": 0.0,
+    "target_total_occupancy": 0.75
+  }
+}
