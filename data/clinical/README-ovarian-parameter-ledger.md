@@ -32,6 +32,18 @@ The citation/locator/label pattern follows the public registry style introduced 
 
 Schema remains compatible with that registry vocabulary; downstream tools may ignore unknown quantitative keys.
 
+## Paraneoplastic exposure rows (P023–P031)
+
+Added 2026-11-06 for the [paraneoplastic antigen-exposure experiment](../../auto-research/2026-11-05-E-paraneoplastic-exposure/report.md)
+and Project Asma's exposure and observability record. P023–P027 are
+abstract-only values (**CONJECTURE**): anti-Yo functional outcome, time to
+clinical plateau and survival, and the serum or plasma neurofilament light rises
+caused by taxane chemotherapy and by surgery. P028–P031 are the model's kinetic
+inputs with no adequate human estimate (**MISSING**): effector decay after antigen
+removal, Purkinje-cell loss rate, neurofilament light clearance, and the mode and
+gain of antigen presentation. Filling any MISSING row needs a primary source; the
+experiment's invented rates are not estimates of them.
+
 ## Validation
 
 **Offline (CI):**

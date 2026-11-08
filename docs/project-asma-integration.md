@@ -183,3 +183,51 @@ Verification for this increment: **153 Python tests passed with no skips** in
 against both checked-in and regenerated fixtures, with worst plasma-profile
 relative error 4.8e-13 over 48 points. Regenerated molecular fixtures were not
 retained. This is numerical software verification, not biological validation.
+
+## 2026-11-05 update: kinetic invariants and paraneoplastic antigen exposure
+
+Project Asma's [exposure and observability record](https://github.com/Foundation-0/project-asma/blob/main/docs/research/paraneoplastic-exposure-observability.md)
+asks what irreversible immune-mediated neural injury records about a tumor's
+antigen over time. Its exact result is that final neural survival depends on a
+schedule only through antigen exposure, so treatment order can change neural
+outcome while the tumor endpoint cannot. Which order minimizes exposure depends
+on whether antigen is presented in proportion to living burden or released by
+cells killed in the body.
+
+The reusable library change is `kinetic_invariant_basis()` and
+`kinetic_residuals()` in `vh.graph.reactions`. They find conserved quantities
+that depend on rate values, which turns integral identities into exact checks.
+The same finder recovers the clearance identity (amount eliminated equals rate
+times AUC) behind the earlier clearance-reference work. The fork-specific
+experiment is [`scripts/validate_paraneoplastic_exposure.py`](../scripts/validate_paraneoplastic_exposure.py),
+with its [report](../auto-research/2026-11-05-E-paraneoplastic-exposure/report.md).
+Its optional bridge compares 28 exposure and release values with Asma's exact
+rational module, using a trusted local checkout as before.
+
+All rates, burdens and units are invented. No patient data, anti-Yo mechanism,
+neurofilament-light validity or treatment benefit enters the library, the
+experiment or the bridge.
+
+Verification for this increment (2026-11-05): **231 Python tests passed with no
+skips** in 70.4 seconds, including 16 new focused cases; JavaScript engine checks
+passed. Recorded runs are pinned to clean checkouts (VH `c88db66`, Asma
+`a5086b8`) in [`results.json`](../auto-research/2026-11-05-E-paraneoplastic-exposure/results.json)
+and [`bridge-results.json`](../auto-research/2026-11-05-E-paraneoplastic-exposure/bridge-results.json).
+Runtime: Linux x86_64, Python 3.13 in a fresh virtual environment, NumPy 2.5.4,
+SciPy 1.18.1, JAX 0.12.0.1, OpenMM 8.6.1, PDBFixer from source, PySCF 2.15.0,
+geomeTRIC 1.1.1, libRoadRunner 2.11.0, pytest 9.2.0, Node 22.
+
+**Environment note.** On Debian/Ubuntu system Python, `pip install -e '.[dev]'`
+fails to build geomeTRIC and PDBFixer because the distribution's patched
+setuptools lacks `install_layout`. A fresh `python -m venv` with upgraded `pip`,
+`setuptools` and `wheel`, as in the commands above, installs everything. Write
+validation output outside the checkout (or commit first); a redirect into the
+working tree marks the recorded checkout as dirty.
+
+**2026-11-06 follow-up.** The [ovarian parameter ledger](../data/clinical/README-ovarian-parameter-ledger.md)
+now records the experiment's premises and gaps as rows P023–P031. All 17 ledger
+DOIs passed the Crossref title and first-author check, which caught and fixed a
+typographic-apostrophe mismatch in one new surname. Open next steps for both
+repositories are listed in Asma's
+[continuation section](https://github.com/Foundation-0/project-asma/blob/main/docs/research/paraneoplastic-exposure-observability.md#continuation-for-the-team)
+and in [roadmap item 10](roadmap.md).
