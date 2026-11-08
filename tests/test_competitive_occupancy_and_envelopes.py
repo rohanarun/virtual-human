@@ -135,7 +135,7 @@ def test_execute_evidence_envelope_computes_exact_corners_and_threshold_classifi
         }
 
     reg = ModelRegistry()
-    reg.register(ModelSpec("gaddum", in_specs, out_specs, model, "domain", "val", ("src",)), model)
+    reg.register(ModelSpec("gaddum", in_specs, out_specs, model, "domain", "val", ("src",)))
     edge = Edge("pool", "groove", "bind", model="gaddum")
 
     ev = {
@@ -178,7 +178,6 @@ def test_execute_evidence_envelope_fails_closed_before_calling_model():
     reg = ModelRegistry()
     reg.register(
         ModelSpec("pass", {"in": spec}, {"out": spec}, lambda x: calls.append(x) or {"out": x["in"]}, "d", "v", ("s",)),
-        lambda x: calls.append(x) or {"out": x["in"]},
     )
     edge = Edge("a", "b", "r", model="pass")
     q = Quantity(2.0, "rate_constant", "1/h", "unbound_plasma", ctx, ("src",))
@@ -192,9 +191,11 @@ def test_execute_evidence_envelope_fails_closed_before_calling_model():
         EvidenceInput("E3", "recorded", q, "S", "L", "lim", Uncertainty("CI95", "negative low", -0.5, 4.0)),
         # High endpoint above PortSpec.maximum
         EvidenceInput("E4", "recorded", q, "S", "L", "lim", Uncertainty("CI95", "excess high", 1.0, 12.0)),
-        # Lossy Decimal endpoint
-        EvidenceInput("E5", "recorded", q, "S", "L", "lim", Uncertainty("CI95", "decimal", Decimal("1.1"), 3.0)),
     ]
+    # A lossy Decimal endpoint never even constructs: Uncertainty itself
+    # rejects non-Real endpoints, so it cannot reach the model either.
+    with pytest.raises(ContractError):
+        Uncertainty("CI95", "decimal", Decimal("1.1"), 3.0)
     for bad in bad_records:
         with pytest.raises(ContractError):
             execute_evidence_envelope(reg, edge, {"in": bad}, {"in": spec})
