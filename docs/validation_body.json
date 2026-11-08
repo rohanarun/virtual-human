@@ -5,8 +5,8 @@
  "clint_scale_middle_out": 1.1273433145411291,
  "iv_infusion_h": 0.03333333333333333,
  "reference_individual": {
-  "bottom_up": "midazolam in ICRP 89 reference male: Vss 64 L (0.88 L/kg), B:P 0.60, fu 0.031, CLint,hep 760 L/h -> CL_plasma 17.1 L/h (hepatic blood 28.2, renal 0.24), t1/2 ~2.6 h | oral: ka 1.65/h, Fa 0.98, Fg 0.49, Fh 0.72",
-  "middle_out": "midazolam in ICRP 89 reference male: Vss 64 L (0.88 L/kg), B:P 0.60, fu 0.031, CLint,hep 856 L/h -> CL_plasma 18.6 L/h (hepatic blood 30.7, renal 0.24), t1/2 ~2.4 h | oral: ka 1.65/h, Fa 0.98, Fg 0.46, Fh 0.69"
+  "bottom_up": "midazolam in ICRP 89 reference male: Vss 64 L (0.88 L/kg), B:P 0.60, fu 0.031, CLint,hep 760 L/h -> CL_plasma 17.1 L/h (hepatic blood 28.2, renal 0.24), t1/2,terminal ~4.1 h (effective ln2*Vss/CL ~2.6 h) | oral: ka 1.65/h, Fa 0.98, Fg 0.49, Fh 0.72",
+  "middle_out": "midazolam in ICRP 89 reference male: Vss 64 L (0.88 L/kg), B:P 0.60, fu 0.031, CLint,hep 856 L/h -> CL_plasma 18.6 L/h (hepatic blood 30.7, renal 0.24), t1/2,terminal ~3.9 h (effective ln2*Vss/CL ~2.4 h) | oral: ka 1.65/h, Fa 0.98, Fg 0.46, Fh 0.69"
  },
  "summary": {
   "bottom_up": {

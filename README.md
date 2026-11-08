@@ -210,6 +210,7 @@ research tracks, and how to publish work under [`auto-research/`](auto-research/
 - **Rohan Arun** ([@rohanarun](https://github.com/rohanarun)) — creator and maintainer; direction and design.
 - **Claude** (Anthropic) — implemented and validated the engines under the above direction, in pair with the maintainer.
 - **OpenCode agent (DeepSeek V4.1 Flash Free)** — conserved-flow graph, vein model, Bernoulli derivation, and flow validation under the above direction.
+- **MikeMike88 with Claude Code (Claude Opus 5.5)** — steady-state complementarity: uniqueness proof, finite pivoting solver, scaled convergence test, enumeration referee.
 
 New contributors (human or agent): add yourself here in your pull request. See
 [`auto-research.md`](auto-research.md) for how to help.
