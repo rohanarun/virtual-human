@@ -40,7 +40,7 @@ Built from scratch in `vh.graph.algorithms` and demonstrated in
 | What route does an oral drug take first? | path enumeration | `gut lumen → gut → liver` — **first-pass metabolism falls out of the topology** |
 | Does anything recirculate? | strongly-connected components | one loop spanning 15 compartments — the systemic circulation |
 | Where are the hubs / bottlenecks? | betweenness centrality | arterial, venous, lung (all of cardiac output passes through) |
-| Which organ dominates elimination? | edge analysis | liver 99% vs kidney 1% of blood clearance |
+| Which reported clearance parameter is larger? | edge analysis | liver 99% vs kidney 1% of the plasma-referenced reporting sum; see the distinction below |
 
 These are not approximations — they are the exact answers the graph structure
 determines.
@@ -94,18 +94,98 @@ ladder are in [`bernoulli_veins.md`](bernoulli_veins.md) and
 [`validation_flow.md`](validation_flow.md) and
 [`validation_flow.json`](validation_flow.json).
 
-## Partial verification — "render part of it to verify it partially"
+## Clearance reporting and independent verification
 
 Because the formalization is compositional, any subgraph can be pulled out and
 checked on its own:
 
 - **render** any subgraph to a diagram (`vh.graph.render`, via Mermaid) and
-  inspect it (`docs/img/pbpk_graph.svg`, and the elimination subgraph);
-- **verify** it numerically: the elimination subgraph's total clearance equals
-  the full model's clearance exactly (28.488 L/h), so that part is correct in
-  isolation.
+  inspect the [whole-body source](img/pbpk_graph.mmd) or
+  [elimination subgraph source](img/pbpk_elimination_subgraph.mmd);
+- **check the export**: elimination edges carry explicit `units="L/h"` and
+  `reference_basis="plasma"`. Since `C_blood = bp * C_plasma`, conserving
+  elimination rate requires `CL_plasma = bp * CL_blood`. The schema rejects
+  missing/mixed reference bases, incorrect units, and nonfinite or negative
+  clearances. The exported sum is **17.104405 L/h** for reference male midazolam,
+  matching the body's *reported parameter sum*. This replaces a previous
+  **28.488253 L/h** sum that mixed hepatic blood and renal plasma references.
+- **verify independently**: the script integrates the linear ODE analytically,
+  `integral(x dt) = -M_active^-1 x(0)`, for a 1 mg IV bolus. Dose divided by
+  venous plasma AUC is **17.103070 L/h**, agreeing with the exact well-stirred
+  organ mass balance to less than **1e-10 L/h**. Tests separately check exported
+  hepatic rates against exact rational mass balance at blood:plasma ratios of
+  0.5, 1 and 2, so a ratio of 1 cannot hide the reference error.
 
-![whole-body graph](img/pbpk_graph.svg)
+These checks answer different questions. Renal `cl` is a **nominal filtration
+parameter** (`fu * GFR`), whereas hepatic `cl` is a **well-stirred effective
+clearance**. Each edge records its `clearance_kind` and source. The finite renal
+blood flow makes exact systemic clearance slightly smaller than the reporting
+sum: **0.001336 L/h** in this example. With `q = renal blood flow * bp`, the
+effective renal clearance is `q * cl_renal / (q + cl_renal)`. The shared plasma
+basis makes export aggregation well defined, but does not make these parameters
+identical to the ODE's local tissue elimination coefficients or independently
+validate the biology. This change leaves the PBPK ODE and its inputs unchanged.
+
+```mermaid
+flowchart LR
+  liver -->|"CL 16.86 L/h, plasma: effective hepatic"| eliminated
+  kidney -->|"CL 0.24 L/h, plasma: nominal filtration"| eliminated
+```
+
+The full diagrams remain reproducible from the linked Mermaid sources. Old
+raster/vector images with mixed reference values have been removed.
+
+## Reaction networks from SBML
+
+`vh.graph.sbml` reads a declared subset of SBML (Levels 2 and 3 core) from
+scratch: compartments, species, parameters, function definitions, initial
+assignments, assignment rules and reactions with MathML kinetic laws. Anything
+outside the subset — events, rate or algebraic rules, delays, fast reactions,
+stoichiometryMath, conversion factors, required packages — is refused by name,
+never silently dropped. A model becomes
+
+- an **executable network**: reaction rates, `d amount / dt = N v`,
+  trajectories, steady states and the Jacobian restricted to the stoichiometric
+  class; and
+- a **typed graph**: `species`, `reaction`, `compartment` and `moiety` nodes;
+  `reactant`/`product` edges carrying exact stoichiometry, `modifier` edges, and
+  `member` edges from each species to the conserved moieties it belongs to.
+
+The graph schema adds four invariants, each recomputed from the graph's own
+edges rather than trusted from the importer:
+
+- **stoichiometry** — every coefficient is a positive exact rational;
+- **located** — every species is in exactly one compartment;
+- **conservation** — each moiety is an exact left-null vector of `N`
+  (`l . N = 0` in rational arithmetic), the moieties are independent and span
+  the whole left nullspace, and each total equals the weighted initial amounts;
+- **stoichiometric consistency** — every reacting species admits a strictly
+  positive mass conserved by all internal reactions (Gevorgyan et al. 2008).
+  Each answer carries an exact certificate: a mass vector, or a reaction
+  combination that provably creates the unconserved species from nothing.
+
+Validated on three CC0 BioModels in [`data/sbml/`](../data/sbml/sources.json)
+against exact algebra and libRoadRunner as an independent referee (details in
+the [auto-research report](../auto-research/2026-11-05-E-sbml-import/report.md)):
+
+| Model | Exact conservation laws | Referee agreement |
+|---|---|---|
+| Kholodenko 2000 MAPK oscillator (BIOMD0000000010) | 3 kinase totals (100, 300, 300) | trajectories 7e-10; unstable fixed point and eigenvalues match; period 1299.77 to 9e-12 |
+| Huang & Ferrell 1996 MAPK cascade (BIOMD0000000009) | 7 enzyme/kinase/phosphatase totals | trajectories 6e-10; stable steady state 2e-12; eigenvalues 8e-10 |
+| Elowitz & Leibler 2000 repressilator (BIOMD0000000012) | none (open system) | trajectories 7e-10; unstable fixed point; period 125.354 to 2e-12 |
+
+```mermaid
+flowchart LR
+  MKKK -->|J0| MKKK_P -->|J1| MKKK
+  MKK -->|J2| MKK_P -->|J3| MKK_PP -->|J4| MKK_P -->|J5| MKK
+  MAPK -->|J6| MAPK_P -->|J7| MAPK_PP -->|J8| MAPK_P -->|J9| MAPK
+  MKKK_P -.->|activates J2, J3| MKK
+  MKK_PP -.->|activates J6, J7| MAPK
+  MAPK_PP -.->|inhibits J0| MKKK
+```
+
+The full imported graph, including reaction nodes and moieties, is in
+[`img/kholodenko_mapk_sbml.mmd`](img/kholodenko_mapk_sbml.mmd).
 
 ## The graph verifying the physics engine
 
@@ -155,6 +235,7 @@ physics a formal, inspectable, verifiable skeleton to hang on.
 ```bash
 python scripts/validate_graph.py     # runs every algorithm above, renders the diagrams
 python scripts/validate_flow.py      # flow graph vs exact Poiseuille/Windkessel/Starling/Womersley + venous pressure
-pytest -q tests/test_graph.py        # 10 tests incl. the two verifications
+python scripts/validate_sbml.py      # SBML import against exact algebra and libRoadRunner
+pytest -q tests/test_graph.py tests/test_graph_clearance.py tests/test_sbml.py
 pytest -q tests/test_flow.py         # 24 tests incl. the exact flow authorities
 ```

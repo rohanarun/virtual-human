@@ -28,8 +28,9 @@ from .core import EdgeRule, Graph, Schema
 # ---------------------------------------------------------------------------
 def build_pbpk_graph(model, drug_name: str | None = None) -> tuple[Graph, Schema]:
     """The PBPK model as a graph. Blood-flow edges carry L/h; partition edges carry
-    the Rodgers-Rowland Kp; clearance edges carry L/h; the oral route carries the
-    absorption path. Numbers come straight from the validated model."""
+    the Rodgers-Rowland Kp; clearance edges carry explicitly plasma-referenced
+    L/h. These are reporting parameters, not the tissue elimination coefficients
+    used by the ODE. The oral route carries the absorption path."""
     from vh.body.physiology import PORTAL, TISSUES
 
     ind, p = model.ind, model.p
@@ -64,9 +65,17 @@ def build_pbpk_graph(model, drug_name: str | None = None) -> tuple[Graph, Schema
     # the partition coefficient (how strongly the drug concentrates in each tissue,
     # from Rodgers-Rowland) is already on each compartment node as `kp`.
 
-    # elimination edges (the only edges to the sink)
-    g.add_edge("liver", "eliminated", "clears", cl=float(p.cl_hep_blood_l_h), organ="liver", model="pbpk.hepatic")
-    g.add_edge("kidney", "eliminated", "clears", cl=float(p.cl_renal_l_h), organ="kidney", model="pbpk.renal")
+    # Reporting clearances: CL_blood * C_blood = CL_plasma * C_plasma,
+    # hence CL_plasma = CL_blood * bp. Never sum blood- and plasma-based CL.
+    # The kidney value is nominal filtration clearance, not the finite-flow
+    # effective clearance; their sum reproduces p.cl_total_plasma_l_h only.
+    g.add_edge("liver", "eliminated", "clears", cl=float(p.cl_hep_blood_l_h * p.bp),
+               units="L/h", reference_basis="plasma", clearance_kind="well_stirred_hepatic",
+               source="PBPKModel.p.cl_hep_blood_l_h * PBPKModel.p.bp",
+               organ="liver", model="pbpk.hepatic")
+    g.add_edge("kidney", "eliminated", "clears", cl=float(p.cl_renal_l_h),
+               units="L/h", reference_basis="plasma", clearance_kind="nominal_renal_filtration",
+               source="PBPKModel.p.cl_renal_l_h", organ="kidney", model="pbpk.renal")
     # oral absorption route
     g.add_edge("gut_lumen", "gut", "absorbs", fa=float(p.fa), fg=float(p.fg), ka=float(p.ka_h), model="pbpk.absorption")
 
@@ -86,11 +95,29 @@ def _pbpk_schema(cardiac_output: float) -> Schema:
                     "lumen": set(), "target": {"kd_nm"}},
         edge_rules=[
             EdgeRule("flow", {"blood", "compartment"}, {"blood", "compartment"}, {"flow"}),
-            EdgeRule("clears", {"compartment"}, {"sink"}, {"cl"}),
+            EdgeRule("clears", {"compartment"}, {"sink"},
+                     {"cl", "units", "reference_basis", "clearance_kind", "source"}),
             EdgeRule("absorbs", {"lumen"}, {"compartment"}, {"fa"}),
             EdgeRule("binds", {"compartment"}, {"target"}, {"kd_nm"}),
         ],
     )
+
+    @schema.invariant("clearance-reference")
+    def _clearance_reference(g: Graph) -> list[str]:
+        out = []
+        for e in g.edges_of_type("clears"):
+            if e.attrs.get("units") != "L/h" or e.attrs.get("reference_basis") != "plasma":
+                out.append(f"edge {e.key}: clearance must use L/h referenced to plasma")
+            cl = e.attrs.get("cl")
+            try:
+                valid = (not isinstance(cl, (bool, np.bool_))
+                         and isinstance(cl, (int, float, np.number)) and np.isrealobj(cl)
+                         and np.isfinite(float(cl)) and cl >= 0)
+            except (OverflowError, TypeError, ValueError):
+                valid = False
+            if not valid:
+                out.append(f"edge {e.key}: clearance must be a finite nonnegative number")
+        return out
 
     @schema.invariant("blood-conservation")
     def _conserve(g: Graph) -> list[str]:

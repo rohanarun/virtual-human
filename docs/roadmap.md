@@ -75,6 +75,9 @@ A cell is ~10¹⁴ atoms, so pure CCSD(T) will never reach it. The path up:
    from the molecular layer → action-potential prolongation → torsade risk category.
    *Done when* the 28 CiPA reference drugs are classified into their published risk categories.
 10. **Cells and pathways.** SBML import (BioModels) so target occupancy drives signaling and cellular response.
+    *Started 2026-11-05:* a from-scratch SBML core reader with exact conservation and positive-mass
+    invariants, validated against libRoadRunner ([report](../auto-research/2026-11-05-E-sbml-import/report.md)).
+    Still open: events, rate rules, delays, units checking, and wiring `vh.bridge` occupancy into a pathway.
 11. **Uncertainty end to end.** Propagate parameter uncertainty across scales; Bayesian calibration; because every
     layer is differentiable (JAX), gradients of a clinical endpoint with respect to molecular parameters.
 

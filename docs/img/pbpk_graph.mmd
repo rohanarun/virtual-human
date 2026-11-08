@@ -1,0 +1,60 @@
+%% Midazolam whole-body graph
+flowchart LR
+  arterial(["arterial blood"])
+  venous(["venous blood"])
+  eliminated[("eliminated")]
+  gut_lumen(["gut lumen (oral dose)"])
+  lung["lung"]
+  heart["heart"]
+  brain["brain"]
+  muscle["muscle"]
+  adipose["adipose"]
+  skin["skin"]
+  bone["bone"]
+  kidney["kidney"]
+  liver["liver"]
+  gut["gut"]
+  spleen["spleen"]
+  pancreas["pancreas"]
+  rest["rest"]
+  target{"GABA-A receptor (benzodiazepine site, GABRG2)"}
+  venous -->|"390.0 L/h"| lung
+  lung -->|"390.0 L/h"| arterial
+  arterial -->|"15.6 L/h"| heart
+  heart -->|"15.6 L/h"| venous
+  arterial -->|"46.8 L/h"| brain
+  brain -->|"46.8 L/h"| venous
+  arterial -->|"66.3 L/h"| muscle
+  muscle -->|"66.3 L/h"| venous
+  arterial -->|"19.5 L/h"| adipose
+  adipose -->|"19.5 L/h"| venous
+  arterial -->|"19.5 L/h"| skin
+  skin -->|"19.5 L/h"| venous
+  arterial -->|"19.5 L/h"| bone
+  bone -->|"19.5 L/h"| venous
+  arterial -->|"74.1 L/h"| kidney
+  kidney -->|"74.1 L/h"| venous
+  arterial -->|"25.4 L/h"| liver
+  arterial -->|"58.5 L/h"| gut
+  gut -->|"58.5 L/h"| liver
+  arterial -->|"11.7 L/h"| spleen
+  spleen -->|"11.7 L/h"| liver
+  arterial -->|"3.9 L/h"| pancreas
+  pancreas -->|"3.9 L/h"| liver
+  arterial -->|"29.2 L/h"| rest
+  rest -->|"29.2 L/h"| venous
+  liver -->|"99.5 L/h"| venous
+  liver -->|"CL 16.86 L/h (plasma)"| eliminated
+  kidney -->|"CL 0.24 L/h (plasma)"| eliminated
+  gut_lumen -->|"Fa·Fg=0.48"| gut
+  brain -->|"Kd 1.8 nM"| target
+  classDef c_blood fill:#C2373A,stroke:#222,color:#ffffff;
+  class arterial,venous c_blood;
+  classDef c_compartment fill:#2B44C4,stroke:#222,color:#ffffff;
+  class lung,heart,brain,muscle,adipose,skin,bone,kidney,liver,gut,spleen,pancreas,rest c_compartment;
+  classDef c_sink fill:#586379,stroke:#222,color:#ffffff;
+  class eliminated c_sink;
+  classDef c_lumen fill:#B26A12,stroke:#222,color:#ffffff;
+  class gut_lumen c_lumen;
+  classDef c_target fill:#1A8A54,stroke:#222,color:#ffffff;
+  class target c_target;

@@ -120,12 +120,18 @@ class Graph:
 
     # --- subgraphs -----------------------------------------------------------
     def subgraph(self, node_ids: Iterable[str], name: str | None = None) -> "Graph":
-        """Induced subgraph on the given nodes (all edges with both ends inside)."""
+        """Induced subgraph on the given nodes (all edges with both ends inside).
+
+        Nodes keep this graph's insertion order, not the order (or set-iteration
+        order) of `node_ids`, so serialization and rendering are reproducible."""
         keep = set(node_ids)
+        unknown = keep - self.nodes.keys()
+        if unknown:
+            raise KeyError(f"subgraph references unknown nodes {sorted(unknown)!r}")
         g = Graph(name or f"{self.name}:sub")
-        for nid in keep:
-            n = self.nodes[nid]
-            g.add_node(n.id, n.type, n.scale, n.label, **dict(n.attrs))
+        for n in self.nodes.values():
+            if n.id in keep:
+                g.add_node(n.id, n.type, n.scale, n.label, **dict(n.attrs))
         for e in self.edges:
             if e.src in keep and e.dst in keep:
                 g.add_edge(e.src, e.dst, e.type, e.directed, e.model, **dict(e.attrs))

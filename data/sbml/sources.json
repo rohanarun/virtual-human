@@ -1,0 +1,50 @@
+{
+ "description": "Curated BioModels used as the SBML import regression set. Files are unmodified downloads.",
+ "retrieved": "2026-11-05",
+ "download_url_pattern": "https://www.ebi.ac.uk/biomodels/model/download/{id}?filename={id}_url.xml",
+ "models": [
+  {
+   "id": "BIOMD0000000009",
+   "file": "BIOMD0000000009.xml",
+   "name": "Huang1996 - Ultrasensitivity in MAPK cascade",
+   "sbml": "L2V4",
+   "bytes": 54521,
+   "sha256": "1f95d793517d47dbf98321a89cdb14fcff9f461427b4ea062d398734c962ab98",
+   "url": "https://www.ebi.ac.uk/biomodels/model/download/BIOMD0000000009?filename=BIOMD0000000009_url.xml",
+   "license": "CC0 1.0 (stated in the model's notes)",
+   "pubmed": [
+    "20587024",
+    "8816754"
+   ]
+  },
+  {
+   "id": "BIOMD0000000010",
+   "file": "BIOMD0000000010.xml",
+   "name": "Kholodenko2000 - Ultrasensitivity and negative feedback bring oscillations in MAPK cascade",
+   "sbml": "L2V4",
+   "bytes": 29295,
+   "sha256": "906964e07ffd570ad94a03c1222e230b54b913cd536b008392bfb6155930a966",
+   "url": "https://www.ebi.ac.uk/biomodels/model/download/BIOMD0000000010?filename=BIOMD0000000010_url.xml",
+   "license": "CC0 1.0 (stated in the model's notes)",
+   "pubmed": [
+    "10712587",
+    "20587024"
+   ]
+  },
+  {
+   "id": "BIOMD0000000012",
+   "file": "BIOMD0000000012.xml",
+   "name": "Elowitz2000 - Repressilator",
+   "sbml": "L2V3",
+   "bytes": 43901,
+   "sha256": "d535c84bc5fe68b01728cac5c53f8fed971176e3f0f2367a9ba1e9c043b11a2d",
+   "url": "https://www.ebi.ac.uk/biomodels/model/download/BIOMD0000000012?filename=BIOMD0000000012_url.xml",
+   "license": "CC0 1.0 (stated in the model's notes)",
+   "pubmed": [
+    "10659856",
+    "20587024"
+   ]
+  }
+ ],
+ "note": "Only models whose own notes state the CC0 1.0 public-domain dedication are vendored. Survey-only models are identified in the auto-research report by id and SHA-256, not copied here."
+}

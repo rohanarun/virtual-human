@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "scope": "Synthetic mathematical verification only; no biological parameter fit or validation",
+  "provenance": [
+    "Artificial mathematical fixture, all rates/states selected for numerical verification"
+  ],
+  "environment": {
+    "python": "3.12.14",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1"
+  },
+  "units": {
+    "concentration": "mol/L",
+    "time": "s",
+    "sensitivity_parameter": "dimensionless local effective-rate multiplier"
+  },
+  "metrics": {
+    "linear_trajectory_max_abs_error_mol_per_L": 1.4789502955636635e-11,
+    "linear_sensitivity_max_abs_error_mol_per_L": 6.064693192087134e-11,
+    "dimer_trajectory_max_abs_error_mol_per_L": 1.1604717187196911e-11,
+    "dimer_sensitivity_max_abs_error_mol_per_L": 4.7774117994947574e-11,
+    "dimer_conserved_monomers_max_drift_mol_per_L": 2.886579864025407e-15,
+    "nonlinear_binding_vs_DOP853_max_abs_error_mol_per_L": 8.519518424066064e-12
+  },
+  "acceptance_thresholds": {
+    "linear_trajectory_max_abs_error_mol_per_L": 2e-10,
+    "linear_sensitivity_max_abs_error_mol_per_L": 2e-10,
+    "dimer_trajectory_max_abs_error_mol_per_L": 2e-10,
+    "dimer_sensitivity_max_abs_error_mol_per_L": 2e-10,
+    "dimer_conserved_monomers_max_drift_mol_per_L": 1e-14,
+    "nonlinear_binding_vs_DOP853_max_abs_error_mol_per_L": 2e-10
+  },
+  "binding_sensitivity_vs_independent_central_difference": [
+    {
+      "relative_difference_step": 0.001,
+      "max_abs_error_mol_per_L": 8.696595277246644e-08
+    },
+    {
+      "relative_difference_step": 0.0001,
+      "max_abs_error_mol_per_L": 8.754846847480735e-10
+    }
+  ],
+  "rk4_step_halving": [
+    {
+      "max_step_s": 0.2,
+      "abs_error_mol_per_L": 2.484443473338427e-06
+    },
+    {
+      "max_step_s": 0.1,
+      "abs_error_mol_per_L": 1.464574964082921e-07
+    },
+    {
+      "max_step_s": 0.05,
+      "abs_error_mol_per_L": 8.890145675177763e-09
+    }
+  ],
+  "exact_dimer_pool_residuals": {
+    "correct_A_plus_2D": {
+      "dimerize": "0"
+    },
+    "incorrect_A_plus_D": {
+      "dimerize": "-1"
+    }
+  },
+  "linear_scalar_retention_order": {
+    "retention_then_flow_mol_per_L": {
+      "A": 0.09796514260652593,
+      "B": 0.7020348573934749
+    },
+    "flow_then_retention_mol_per_L": {
+      "A": 0.09796514260652595,
+      "B": 0.7020348573934737
+    },
+    "max_abs_difference_mol_per_L": 1.2212453270876722e-15
+  },
+  "nonlinear_scalar_retention_order": {
+    "retention_then_flow_mol_per_L": {
+      "A": 0.32786885245993896,
+      "D": 0.23606557377003065
+    },
+    "flow_then_retention_mol_per_L": {
+      "A": 0.17391304348903505,
+      "D": 0.3130434782554825
+    },
+    "max_abs_difference_mol_per_L": 0.1539558089709039
+  },
+  "external_exchange": {
+    "before_total_mol_per_L": 2.0,
+    "after_total_mol_per_L": 1.3,
+    "final_total_mol_per_L": 1.3000000000000003,
+    "expected_after_total_mol_per_L": 1.3
+  },
+  "limits": [
+    "No SBML importer or Track E completion",
+    "No clinical predictions or parameter estimation",
+    "Finite-step explicit RK4; reject negative states; choose converged step for each model",
+    "Sensitivity holds initial state fixed and does not propagate through protocol jumps",
+    "Conservation laws are structural; elemental composition is not inferred"
+  ]
+}

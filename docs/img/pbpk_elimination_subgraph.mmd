@@ -1,0 +1,28 @@
+%% Elimination subgraph (plasma-referenced reporting parameters)
+flowchart LR
+  arterial(["arterial blood"])
+  venous(["venous blood"])
+  eliminated[("eliminated")]
+  kidney["kidney"]
+  liver["liver"]
+  gut["gut"]
+  spleen["spleen"]
+  pancreas["pancreas"]
+  arterial -->|"74.1 L/h"| kidney
+  kidney -->|"74.1 L/h"| venous
+  arterial -->|"25.4 L/h"| liver
+  arterial -->|"58.5 L/h"| gut
+  gut -->|"58.5 L/h"| liver
+  arterial -->|"11.7 L/h"| spleen
+  spleen -->|"11.7 L/h"| liver
+  arterial -->|"3.9 L/h"| pancreas
+  pancreas -->|"3.9 L/h"| liver
+  liver -->|"99.5 L/h"| venous
+  liver -->|"CL 16.86 L/h (plasma)"| eliminated
+  kidney -->|"CL 0.24 L/h (plasma)"| eliminated
+  classDef c_blood fill:#C2373A,stroke:#222,color:#ffffff;
+  class arterial,venous c_blood;
+  classDef c_compartment fill:#2B44C4,stroke:#222,color:#ffffff;
+  class kidney,liver,gut,spleen,pancreas c_compartment;
+  classDef c_sink fill:#586379,stroke:#222,color:#ffffff;
+  class eliminated c_sink;

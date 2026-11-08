@@ -5,7 +5,7 @@ Proves, on the real validated engines:
      checked by a graph algorithm;
   2. structural pharmacology falls out of topology (IV reach, oral first pass,
      recirculation, hubs);
-  3. partial verification: a subgraph's elimination matches the full model;
+  3. clearance reference consistency, with a separate exact IV dose/AUC check;
   4. a pure graph BFS on the bond graph reproduces the force-field exclusion list
      exactly -- the graph verifying the physics engine;
   5. renders the body graph and a subgraph to diagrams.
@@ -37,6 +37,8 @@ def whole_body():
     print(g.summary())
     problems = g.validate(schema)
     print("schema + invariants:", "all pass" if not problems else problems)
+    if problems:
+        raise ValueError("invalid PBPK graph: " + "; ".join(problems))
 
     bal = A.flow_balance(g, "flow", ("flow",))
     print(f"[1 blood conservation] worst residual {bal['max_abs_residual']:.2e} L/h "
@@ -55,7 +57,8 @@ def whole_body():
     # elimination split from the clearance edges
     cl = {e.attrs['organ']: e.attrs['cl'] for e in g.edges_of_type('clears')}
     print(f"[2 elimination] hepatic {cl['liver']:.2f} L/h vs renal {cl['kidney']:.2f} L/h "
-          f"-> liver handles {100*cl['liver']/sum(cl.values()):.0f}% (blood clearance)")
+          f"-> hepatic share {100*cl['liver']/sum(cl.values()):.0f}% "
+          "(reported plasma-referenced parameters)")
 
     report["whole_body"] = {
         "summary": g.summary(), "schema_ok": not problems,
@@ -64,22 +67,48 @@ def whole_body():
         "oral_first_pass_path": oral[0] if oral else None,
         "recirculation_loop_size": max(len(c) for c in loops),
         "hubs": [h[0] for h in hubs],
-        "hepatic_fraction": cl["liver"] / sum(cl.values()),
+        "hepatic_reported_parameter_fraction": cl["liver"] / sum(cl.values()),
+        "clearance_units": "L/h", "clearance_reference_basis": "plasma",
     }
     g.save_json(DOCS / "pbpk_graph.json")
-    render(g, str(IMG / "pbpk_graph.svg"), direction="LR", title="Midazolam whole-body graph")
+    render(g, str(IMG / "pbpk_graph.mmd"), direction="LR", title="Midazolam whole-body graph")
 
-    # 3. partial verification: the elimination subgraph alone reproduces total clearance
+    # 3. Export consistency is not an independent check of the ODE. The renal
+    # reporting parameter is nominal filtration clearance, before finite flow.
     sub = g.subgraph(["arterial", "liver", "kidney", "venous", "gut", "spleen", "pancreas", "eliminated"],
                      name="elimination-subgraph")
     sub_cl = sum(e.attrs["cl"] for e in sub.edges_of_type("clears"))
-    full_cl = m.p.cl_hep_blood_l_h + m.p.cl_renal_l_h
-    print(f"[3 partial verification] elimination subgraph total CL {sub_cl:.3f} L/h "
-          f"= full model {full_cl:.3f} L/h  (match: {abs(sub_cl-full_cl) < 1e-9})")
-    render(sub, str(IMG / "pbpk_elimination_subgraph.svg"), direction="LR",
-           title="Elimination subgraph (verified in isolation)")
-    report["partial_verification"] = {"subgraph_cl": sub_cl, "full_cl": full_cl,
-                                      "match": abs(sub_cl - full_cl) < 1e-9}
+    reported_cl = m.p.cl_total_plasma_l_h
+    # Independent analytic integrated mass balance: M_active * integral(x dt)
+    # = -x(0) for a 1 mg IV bolus, with all circulating drug gone at infinity.
+    active = [i for i, n in enumerate(m.names) if n in m.V]
+    initial = np.zeros(len(active))
+    initial[active.index(m.ix["venous"])] = 1.0
+    integrated = -np.linalg.solve(m.M[np.ix_(active, active)], initial)
+    auc = integrated[active.index(m.ix["venous"])] / m.V["venous"] / m.p.bp
+    dose_over_auc = 1.0 / auc
+    # Exact well-stirred organ balance, evaluated from inputs, not edge values.
+    q_h, q_r = m.ind.liver_flow_total * m.p.bp, m.ind.flows["kidney"] * m.p.bp
+    intrinsic_h = m.p.fu * m.p.clint_hep_l_h
+    filtration = m.compound.renal_filtration * m.p.fu * m.ind.gfr
+    analytic_cl = q_h * intrinsic_h / (q_h + intrinsic_h) + q_r * filtration / (q_r + filtration)
+    print(f"[3 clearance reporting] subgraph {sub_cl:.6f} L/h = reported parameter "
+          f"sum {reported_cl:.6f} L/h (plasma); exact IV dose/AUC {dose_over_auc:.6f} L/h")
+    print(f"[3 independent balance] dose/AUC vs analytic organ balance: "
+          f"{abs(dose_over_auc - analytic_cl):.2e} L/h error")
+    render(sub, str(IMG / "pbpk_elimination_subgraph.mmd"), direction="LR",
+           title="Elimination subgraph (plasma-referenced reporting parameters)")
+    report["clearance_reporting"] = {
+        "units": "L/h", "reference_basis": "plasma",
+        "subgraph_parameter_sum": sub_cl, "model_reported_parameter_sum": reported_cl,
+        "export_matches": abs(sub_cl - reported_cl) < 1e-9,
+        "iv_dose_over_venous_plasma_auc": dose_over_auc,
+        "analytic_well_stirred_clearance": analytic_cl,
+        "analytic_absolute_error": abs(dose_over_auc - analytic_cl),
+        "reported_sum_minus_dose_over_auc": sub_cl - dose_over_auc,
+        "limitation": "Reported renal filtration parameter omits finite-flow extraction; "
+                      "export agreement is not independent model validation.",
+    }
 
 
 def molecular():

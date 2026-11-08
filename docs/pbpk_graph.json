@@ -457,7 +457,11 @@
    "type": "clears",
    "directed": true,
    "attrs": {
-    "cl": 28.244519572405274,
+    "cl": 16.86067221890712,
+    "units": "L/h",
+    "reference_basis": "plasma",
+    "clearance_kind": "well_stirred_hepatic",
+    "source": "PBPKModel.p.cl_hep_blood_l_h * PBPKModel.p.bp",
     "organ": "liver"
    },
    "model": "pbpk.hepatic"
@@ -469,6 +473,10 @@
    "directed": true,
    "attrs": {
     "cl": 0.24373314965518464,
+    "units": "L/h",
+    "reference_basis": "plasma",
+    "clearance_kind": "nominal_renal_filtration",
+    "source": "PBPKModel.p.cl_renal_l_h",
     "organ": "kidney"
    },
    "model": "pbpk.renal"

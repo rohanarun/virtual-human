@@ -1,0 +1,71 @@
+{
+  "status": "pass",
+  "scope": "synthetic_operator_consistency_only_not_biological_validation",
+  "as_of": "2026-11-05",
+  "authority": "Project Asma exact rational operators and explicit linear-flow solution",
+  "asma_checkout": {
+    "commit": "03d6cad7eaa97cf6e332515f6e5e0a9172b5addc",
+    "dirty": false
+  },
+  "virtual_human_checkout": {
+    "commit": "cf5510837c89ca636646f215ec62c66e40f5110a",
+    "dirty": true
+  },
+  "source_sha256": {
+    "asma_exact_module": "0b3492e8b9fcc9dd2b7100d81552e212bc0f9c1aeed420b40bb76a9c93cb7a1b",
+    "vh_reactions_module": "a222b1ffa3c9cbdafb1e627004e522da2550d092551a7d0fd88df7b4ead91474",
+    "comparison_script": "bf31e50ddbe4c3ba2c83943220f505ef5d765484eff92137adf496d2f66a0534"
+  },
+  "tolerance_absolute_mol_per_L": 1e-10,
+  "maximum_absolute_error_mol_per_L": 4.8530623963927155e-14,
+  "fixtures": [
+    {
+      "fixture": "selective",
+      "a": "1/10",
+      "b": "1",
+      "q": "1/10",
+      "maximum_absolute_error_mol_per_L": 1.3447576385772209e-14,
+      "comparison_errors_mol_per_L": {
+        "proportional_surgery_first": 4.881511861398735e-15,
+        "proportional_chemo_first": 4.853756285783106e-15,
+        "fixed_surgery_first": 4.881511861398735e-15,
+        "fixed_chemo_first": 1.3447576385772209e-14
+      },
+      "exact_fixed_after_to_before_resistant_ratio": "100/19"
+    },
+    {
+      "fixture": "nonselective",
+      "a": "1/2",
+      "b": "1/2",
+      "q": "1/10",
+      "maximum_absolute_error_mol_per_L": 3.469446951953614e-17,
+      "comparison_errors_mol_per_L": {
+        "proportional_surgery_first": 3.469446951953614e-17,
+        "proportional_chemo_first": 1.3877787807814457e-17,
+        "fixed_surgery_first": 3.469446951953614e-17,
+        "fixed_chemo_first": 8.673617379884035e-18
+      },
+      "exact_fixed_after_to_before_resistant_ratio": "2"
+    },
+    {
+      "fixture": "capped",
+      "a": "1/10",
+      "b": "1/2",
+      "q": "1/2",
+      "maximum_absolute_error_mol_per_L": 4.8530623963927155e-14,
+      "comparison_errors_mol_per_L": {
+        "proportional_surgery_first": 2.4265311981963578e-14,
+        "proportional_chemo_first": 2.4265311981963578e-14,
+        "fixed_surgery_first": 2.4265311981963578e-14,
+        "fixed_chemo_first": 4.8530623963927155e-14
+      },
+      "exact_fixed_after_to_before_resistant_ratio": "2"
+    }
+  ],
+  "limitations": [
+    "invented quantities and rates",
+    "no physiological conversion",
+    "fixed-residual map explicitly applied outside the VH protocol runner",
+    "no full Gu model, patient model, survival inference or clinical recommendation"
+  ]
+}
