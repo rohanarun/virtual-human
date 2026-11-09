@@ -2,7 +2,7 @@
   "schema_version": 1,
   "ledger_id": "ovarian-hgsoc-treatment-sequence",
   "checked_on": "2026-11-05",
-  "scope": "Published population and trial parameters for high-grade serous ovarian cancer (HGSOC) and first-line or maintenance treatment-sequence modeling. Public primary literature only; supports Foundation-0/project-asma PR #47 assumption audits and virtual-human graph reaction experiments. Not fitted to private data.",
+  "scope": "Published population and trial parameters for high-grade serous ovarian cancer (HGSOC) and first-line or maintenance treatment-sequence modeling. Public primary literature only; supports Foundation-0/project-asma PR #47 assumption audits and virtual-human graph reaction experiments. Not fitted to private data. Rows P023-P031 support the paraneoplastic antigen-exposure experiment (anti-Yo cerebellar degeneration and neural injury-rate measurement).",
   "extends": {
     "description": "Row identifiers, citation blocks (doi, title, locator) and label vocabulary {KNOWN, CONJECTURE, MISSING} follow the public registry pattern in Foundation-0/project-asma PR #47 (registries/*-sources.json). Quantitative value/range/units/population fields are virtual-human extensions stored under data/clinical/ alongside other provenance-annotated inputs.",
     "references": [
@@ -414,6 +414,168 @@
       "label": "CONJECTURE",
       "derivation": "value from abstract only",
       "limits": "Includes bevacizumab maintenance."
+    },
+    {
+      "id": "P023",
+      "quantity": "Fraction of anti-Yo paraneoplastic cerebellar degeneration patients remaining ambulatory at last follow-up",
+      "value": 0.21,
+      "range": { "kind": "point", "low": null, "high": null, "level": null },
+      "units": "fraction of patients",
+      "population": "Antibody-associated paraneoplastic cerebellar degeneration; Rotterdam antineuronal-antibody laboratory, 12-year retrospective series (n=50; anti-Yo n=19)",
+      "citation": {
+        "doi": "10.1093/brain/awg133",
+        "first_author_surname": "Shams’ili",
+        "year": 2003,
+        "title": "Paraneoplastic cerebellar degeneration associated with antineuronal antibodies: analysis of 50 patients"
+      },
+      "locator": "Europe PMC abstract (PMID 12764061); full article not openly accessible",
+      "label": "CONJECTURE",
+      "derivation": "value from abstract only; 4 of 19 anti-Yo patients remained ambulatory, 4/19 = 0.21",
+      "limits": "Functional state at last follow-up or death, not an injury rate; mixed gynecological and breast tumors; small retrospective series."
+    },
+    {
+      "id": "P024",
+      "quantity": "Upper bound on time from onset to clinical plateau of antibody-associated cerebellar ataxia",
+      "value": 6,
+      "range": { "kind": "min_max", "low": null, "high": 6, "level": null },
+      "units": "months",
+      "population": "Antibody-associated paraneoplastic cerebellar degeneration; Rotterdam antineuronal-antibody laboratory, 12-year retrospective series (n=50; anti-Yo n=19)",
+      "citation": {
+        "doi": "10.1093/brain/awg133",
+        "first_author_surname": "Shams’ili",
+        "year": 2003,
+        "title": "Paraneoplastic cerebellar degeneration associated with antineuronal antibodies: analysis of 50 patients"
+      },
+      "locator": "Europe PMC abstract (PMID 12764061)",
+      "label": "CONJECTURE",
+      "derivation": "value from abstract only; all patients had ataxia 'progressive over weeks to months and stabilized within 6 months'",
+      "limits": "A plateau can reflect an ended attack or a depleted target; functional scores cannot distinguish them (Asma exposure and observability record)."
+    },
+    {
+      "id": "P025",
+      "quantity": "Median survival from diagnosis in anti-Yo paraneoplastic cerebellar degeneration",
+      "value": 13,
+      "range": { "kind": "point", "low": null, "high": null, "level": null },
+      "units": "months",
+      "population": "Antibody-associated paraneoplastic cerebellar degeneration; Rotterdam antineuronal-antibody laboratory, 12-year retrospective series (n=50; anti-Yo n=19)",
+      "citation": {
+        "doi": "10.1093/brain/awg133",
+        "first_author_surname": "Shams’ili",
+        "year": 2003,
+        "title": "Paraneoplastic cerebellar degeneration associated with antineuronal antibodies: analysis of 50 patients"
+      },
+      "locator": "Europe PMC abstract (PMID 12764061)",
+      "label": "CONJECTURE",
+      "derivation": "value from abstract only; median 13 months for anti-Yo versus 7 for anti-Hu, >113 for anti-Tr and >69 for anti-Ri",
+      "limits": "Not HGSOC-specific; survival from neurological diagnosis, not cancer diagnosis; era 1990s-2000s."
+    },
+    {
+      "id": "P026",
+      "quantity": "Peak serum neurofilament light chain during taxane chemotherapy",
+      "value": 129.9,
+      "range": { "kind": "point", "low": null, "high": null, "level": null },
+      "units": "pg/mL",
+      "population": "Adults prescribed at least four cycles of oxaliplatin, cisplatin, docetaxel or paclitaxel; n=42 completed (36 platinum, 6 taxane)",
+      "citation": {
+        "doi": "10.1136/bmjno-2025-001312",
+        "first_author_surname": "Smyth",
+        "year": 2026,
+        "title": "Prospective assessment of serum neurofilament light chain in platinum-induced and taxane-induced peripheral neuropathy"
+      },
+      "locator": "Europe PMC abstract (PMID 41509522), Results",
+      "label": "CONJECTURE",
+      "derivation": "value from abstract only; peak sNfL 129.9 pg/mL with taxanes versus 31.0 pg/mL with platinum agents",
+      "limits": "Peripheral neuropathy context with six taxane patients. Shows that serum NfL during carboplatin-paclitaxel cannot be read as cerebellar injury without a comparator."
+    },
+    {
+      "id": "P027",
+      "quantity": "Plasma neurofilament light chain 48 hours after surgery relative to baseline",
+      "value": 1.6,
+      "range": { "kind": "point", "low": null, "high": null, "level": null },
+      "units": "fold change",
+      "population": "Older surgical patients; n=79, mean age 69",
+      "citation": {
+        "doi": "10.1213/ANE.0000000000008163",
+        "first_author_surname": "Atkins",
+        "year": 2026,
+        "title": "Postoperative Delirium and Neurocognitive Disorders Associated With Inflammatory and Neuronal Injury Biomarkers: A Prospective, Longitudinal, Cohort Study"
+      },
+      "locator": "Europe PMC abstract (PMID 42302277), Results",
+      "label": "CONJECTURE",
+      "derivation": "value from abstract only; NfL 1.6 times higher at 48 hours postsurgery than baseline",
+      "limits": "Not gynecologic oncology surgery; magnitude and duration after debulking unknown; confounds NfL around surgery."
+    },
+    {
+      "id": "P028",
+      "quantity": "Decay rate of antigen-driven anti-Yo (cdr2/CDR2L-specific) effector activity after antigen removal",
+      "value": null,
+      "range": null,
+      "units": null,
+      "population": "Anti-Yo paraneoplastic cerebellar degeneration with gynecologic or breast cancer",
+      "citation": {
+        "doi": "10.1038/3315",
+        "first_author_surname": "Albert",
+        "year": 1998,
+        "title": "Tumor-specific killer cells in paraneoplastic cerebellar degeneration"
+      },
+      "locator": "Europe PMC abstract (PMID 9809559): expanded cdr2-specific CTLs in 3/3 HLA-A2.1+ patients; no kinetics reported",
+      "label": "MISSING",
+      "derivation": null,
+      "limits": "Sets the injury committed after complete antigen removal (kappa * E / delta) in the exposure model; no human estimate located."
+    },
+    {
+      "id": "P029",
+      "quantity": "Rate of Purkinje-cell loss per unit effector activity in anti-Yo paraneoplastic cerebellar degeneration",
+      "value": null,
+      "range": null,
+      "units": null,
+      "population": "Anti-Yo paraneoplastic cerebellar degeneration",
+      "citation": {
+        "doi": "10.1002/acn3.328",
+        "first_author_surname": "Venkatraman",
+        "year": 2016,
+        "title": "Paraneoplastic cerebellar degeneration with anti-Yo antibodies - a review"
+      },
+      "locator": "PMC4999597, Pathogenesis > Pathology: 'the loss of PCs is often very rapid'; no rate reported",
+      "label": "MISSING",
+      "derivation": null,
+      "limits": "Neuropathology describes extent, not kinetics; required to turn exposure differences into neural-outcome differences."
+    },
+    {
+      "id": "P030",
+      "quantity": "Clearance half-life of serum and CSF neurofilament light chain applicable to cerebellar injury",
+      "value": null,
+      "range": null,
+      "units": null,
+      "population": "Autoimmune or paraneoplastic CNS disease",
+      "citation": {
+        "doi": "10.1212/WNL.0000000000207221",
+        "first_author_surname": "Brenner",
+        "year": 2023,
+        "title": "Predictive Value of Serum Neurofilament Light Chain Levels in Anti-NMDA Receptor Encephalitis"
+      },
+      "locator": "Europe PMC abstract (PMID 37015822): serial NfL 'roughly follow clinical disease activity, albeit with delay'; no half-life",
+      "label": "MISSING",
+      "derivation": null,
+      "limits": "Sets the sampling interval needed to resolve injury-rate changes. A 43-day serum estimate seen as a secondary citation was not traced to a primary source and is not entered."
+    },
+    {
+      "id": "P031",
+      "quantity": "Antigen presentation mode and gain in anti-Yo disease: proportional to living tumor burden versus released by in-body tumor death",
+      "value": null,
+      "range": null,
+      "units": null,
+      "population": "Anti-Yo paraneoplastic cerebellar degeneration",
+      "citation": {
+        "doi": "10.1038/3315",
+        "first_author_surname": "Albert",
+        "year": 1998,
+        "title": "Tumor-specific killer cells in paraneoplastic cerebellar degeneration"
+      },
+      "locator": "Europe PMC abstract (PMID 9809559): cross-presentation of apoptotic cells by dendritic cells led to a potent CTL response; no quantitative comparison",
+      "label": "MISSING",
+      "derivation": null,
+      "limits": "Decides which treatment order minimizes neural exposure in the exposure model; the two pure modes disagree when surgery retains more than one cycle."
     }
   ]
 }

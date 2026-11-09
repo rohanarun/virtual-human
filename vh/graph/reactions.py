@@ -169,6 +169,69 @@ class ReactionNetwork:
                         for i, s in enumerate(self.ids)), Fraction(0))
                 for j, r in enumerate(self.reaction_ids)}
 
+    def _exact_effective_rates(self, rate_scales, exact_rates):
+        """Exact rationals of the effective rates the integrator would use."""
+        scales = {} if rate_scales is None else dict(rate_scales)
+        exact = {} if exact_rates is None else dict(exact_rates)
+        self._rates(scales)  # same validation as simulate
+        if set(exact) - set(self.reaction_ids):
+            raise ValueError("exact rates name an unknown reaction")
+        values = []
+        for r in self.reactions:
+            if r.id in exact:
+                k = exact[r.id]
+                if isinstance(k, bool) or not isinstance(k, (int, Fraction)) or k < 0 or float(k) != r.rate:
+                    raise ValueError(f"exact rate for {r.id!r} must be a rational whose float is the rate")
+                k = Fraction(k)
+            else:
+                k = Fraction(r.rate)  # exact value of the stored binary float
+            scale = scales.get(r.id, 1)
+            values.append(k * (scale if isinstance(scale, Fraction) else Fraction(scale)))
+        return values
+
+    def _monomial_columns(self, rates):
+        """Rate-weighted stoichiometry summed over reactions sharing a reactant monomial."""
+        groups = {}
+        for j, r in enumerate(self.reactions):
+            groups.setdefault(tuple(sorted(r.reactants.items())), []).append(j)
+        columns = {}
+        for key, members in groups.items():
+            column = [sum((rates[j] * self._stoich_exact[i][j] for j in members), Fraction(0))
+                      for i in range(len(self.ids))]
+            label = "*".join(s if n == 1 else f"{s}^{n}" for s, n in key) or "1"
+            columns[label] = column
+        return columns
+
+    def kinetic_invariant_basis(self, rate_scales=None, exact_rates=None):
+        """Exact basis of w with w . dC/dt = 0 for every state at these effective rates.
+
+        Mass-action dC/dt is a sum, over distinct reactant monomials m, of m(C)
+        times the rate-weighted stoichiometry of the reactions sharing m. Distinct
+        monomials are independent functions, so w is invariant iff it annihilates
+        every such column. The span contains every stoichiometric pool; extra
+        vectors depend on rate values, e.g. an exposure (AUC) or clearance identity.
+        Rates are the exact values of the stored floats unless ``exact_rates``
+        supplies rationals whose float equals the stored rate.
+        """
+        columns = self._monomial_columns(self._exact_effective_rates(rate_scales, exact_rates))
+        return tuple({s: w for s, w in zip(self.ids, vector) if w}
+                     for vector in _nullspace(list(columns.values()), len(self.ids)))
+
+    def kinetic_residuals(self, weights, rate_scales=None, exact_rates=None):
+        """Exact residual of a declared linear invariant per reactant monomial.
+
+        All zeros means ``sum(w_i C_i)`` is constant along every trajectory of
+        these effective rates. External retain/add events change it by their
+        weighted jump; check those separately.
+        """
+        if not weights or set(weights) - set(self.ids):
+            raise ValueError("invariant must name known species")
+        if any(isinstance(w, bool) or not isinstance(w, (int, Fraction)) for w in weights.values()):
+            raise ValueError("invariant weights must be integers or Fractions")
+        columns = self._monomial_columns(self._exact_effective_rates(rate_scales, exact_rates))
+        return {label: sum((Fraction(weights.get(s, 0)) * column[i] for i, s in enumerate(self.ids)), Fraction(0))
+                for label, column in columns.items()}
+
     def to_graph(self):
         """Bipartite topology preserves multi-reactant stoichiometry and catalysts."""
         graph = Graph("reaction network")

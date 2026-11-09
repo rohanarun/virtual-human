@@ -187,6 +187,21 @@ flowchart LR
 The full imported graph, including reaction nodes and moieties, is in
 [`img/kholodenko_mapk_sbml.mmd`](img/kholodenko_mapk_sbml.mmd).
 
+## Rate-dependent invariants: integrals become checks
+
+Stoichiometric conservation laws depend only on the reaction structure. Some
+useful identities also depend on rate values. Grouping mass-action reactions by
+their reactant monomial gives an exact linear system whose nullspace is every
+weight vector conserved along every trajectory; `ReactionNetwork.kinetic_invariant_basis()`
+returns it in exact rationals. Adding an accumulator (`A -> A + U`) turns a
+path integral into a state, so identities such as *amount eliminated = k × AUC*
+or a cumulative-hazard/exposure balance become invariants the finder discovers
+on its own. In the [paraneoplastic exposure experiment](../auto-research/2026-11-05-E-paraneoplastic-exposure/report.md)
+it recovered Project Asma's exposure identity, then caught a wiring error: a
+hypothesis meant to be release-only still had burden presentation switched on,
+and the pure identity correctly failed. Details and limits are in
+[reaction experiments](reaction_experiments.md#kinetic-invariants-and-cumulative-exposure).
+
 ## The graph verifying the physics engine
 
 The sharpest demonstration that the formalization is faithful: a **pure graph

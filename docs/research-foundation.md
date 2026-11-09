@@ -111,6 +111,31 @@ in every model: two fixed diagonal removal operations still commute. Scalar
 proportional retention commutes with any fixed homogeneous linear flow. These
 null cases should be retained alongside counterexamples.
 
+Commuting endpoints do not mean commuting histories. Hold each result for one
+time unit and add up the burden along the way, its exposure (area under the
+curve). With A retaining one half and B one tenth, both orders end at 5, but
+the exposure differs:
+
+```python
+from fractions import Fraction
+
+def exposure(order, burden=Fraction(100)):
+    total = Fraction(0)
+    for retain in order:
+        burden *= retain
+        total += burden  # one time unit at this level
+    return burden, total
+
+assert exposure([Fraction(1, 2), Fraction(1, 10)]) == (5, 55)
+assert exposure([Fraction(1, 10), Fraction(1, 2)]) == (5, 15)
+```
+
+Any outcome that accumulates, such as irreversible injury driven by what is
+present, can therefore depend on order when the endpoint cannot. Asma's
+[exposure and observability record](https://github.com/Foundation-0/project-asma/blob/main/docs/research/paraneoplastic-exposure-observability.md)
+develops this for paraneoplastic neural injury; the engine's kinetic invariants
+check it ([reaction experiments](reaction_experiments.md#kinetic-invariants-and-cumulative-exposure)).
+
 Asma's [treatment-sequence assumption audit][sequence-result] compares proportional
 retention with a capped fixed-residual rule, using artificial sensitive/resistant
 burdens and exact rational arithmetic. It preserves negative results and explains
@@ -155,6 +180,14 @@ automatically updated status dashboard.
   scales, applicable parameters, uncertainty analysis and independent outcome
   validation. The [roadmap](roadmap.md) is an ambition and acceptance-test list,
   not proof that these capabilities already exist.
+
+**Update, 2026-11-06.** The SBML importer from PR #4 has since merged (main
+`2f23ae5`). Branch `claude/admiring-cori-0qyybb` (commit `d0d2730`, not yet merged)
+adds rate-dependent kinetic invariants and a paraneoplastic antigen-exposure
+experiment cross-checked against Asma's exact module
+([report](../auto-research/2026-11-05-E-paraneoplastic-exposure/report.md)). The
+[ovarian ledger](../data/clinical/README-ovarian-parameter-ledger.md) now also lists
+that experiment's published premises and its missing kinetic parameters.
 
 ## 5. How to start from this foundation
 

@@ -70,6 +70,39 @@ survive export; catalysts occur on both sides. Prefixes disambiguate a species
 and a reaction with the same identifier. The exported graph does not register
 executable callbacks and is not an SBML representation or round-trip importer.
 
+## Kinetic invariants and cumulative exposure
+
+Some conserved quantities depend on rate values, not stoichiometry alone. Group
+the reactions by their reactant monomial (for example `A`, `E` or `N*E`). Distinct
+monomials are independent functions of the state, so a weight vector `w` keeps
+`sum(w_i C_i)` constant along **every** trajectory exactly when it annihilates the
+rate-weighted stoichiometry of each group. `kinetic_invariant_basis()` returns an
+exact rational basis of all such vectors; `kinetic_residuals(weights)` checks a
+declared one per monomial. The span always contains the stoichiometric pools of
+`conservation_basis()`. Extra vectors appear only when reactions share a monomial.
+
+Path functionals become invariants once an accumulator is added. A catalytic
+reaction `A -> A + U` at rate 1 makes `U` the integral of `A` (its exposure or
+AUC). With elimination `C -> X` at rate `k` and `C -> C + U`, the finder returns
+`X - k U`: amount eliminated equals clearance times AUC. With an antigen-driven
+effector (`A -> A + E` at `alpha`, `E -> 0` at `delta`) and a cumulative hazard
+`E -> E + H` at `kappa`, it returns `H + (kappa/delta) E - (kappa alpha/delta) U`.
+Final hazard therefore depends on the antigen history only through its exposure.
+
+```python
+basis = network.kinetic_invariant_basis(rate_scales={"present": 0},
+                                        exact_rates={"decay": Fraction(1, 4)})
+residuals = network.kinetic_residuals({"H": 1, "E": Fraction(1, 25)})
+```
+
+Rates are taken as the exact values of the stored binary floats unless
+`exact_rates` supplies rationals whose float equals the stored rate. Rate scales
+follow the same per-phase meaning as in `simulate`, so an invariant can hold in
+one phase and not another. Retain/add events change the weighted sum by their
+weighted jump and must be accounted for separately; an event that touches only
+zero-weight species leaves it unchanged. Like the stoichiometric basis, the
+result is a statement about the equations supplied, not about biology.
+
 ## Numerical execution and sensitivity
 
 The solver is from-scratch classical fixed-step RK4. Each requested observation
@@ -125,6 +158,7 @@ Run the report and tests with:
 ```bash
 PYTHONPATH=. python scripts/validate_reaction_experiments.py
 PYTHONPATH=. python -m pytest -q tests/test_reaction_experiments.py
+PYTHONPATH=. python -m pytest -q tests/test_kinetic_invariants.py tests/test_paraneoplastic_exposure.py
 ```
 
 The [report](../auto-research/2026-11-05-E-reaction-experiments/report.md) records

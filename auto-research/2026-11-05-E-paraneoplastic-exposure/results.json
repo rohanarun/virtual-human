@@ -1,0 +1,177 @@
+{
+  "as_of": "2026-11-05",
+  "authorities": [
+    "exact kinetic invariants (rational nullspace)",
+    "closed-form integrals",
+    "Project Asma exact rational module (optional bridge)"
+  ],
+  "checks": {
+    "continuous_schedules": [
+      {
+        "best_position": 0,
+        "continuous_criterion_surgery_first": true,
+        "hypothesis": "burden",
+        "surgery_keep": 0.1
+      },
+      {
+        "best_position": 0,
+        "continuous_criterion_surgery_first": true,
+        "hypothesis": "release",
+        "surgery_keep": 0.1
+      },
+      {
+        "best_position": 6,
+        "continuous_criterion_surgery_first": false,
+        "hypothesis": "burden",
+        "surgery_keep": 0.75
+      },
+      {
+        "best_position": 0,
+        "continuous_criterion_surgery_first": true,
+        "hypothesis": "release",
+        "surgery_keep": 0.75
+      }
+    ],
+    "discrete_schedules": [
+      {
+        "best_position": 0,
+        "exposure_by_position": [
+          21.71874999999823,
+          61.718750000007105,
+          81.71875000000739,
+          91.71875000000682,
+          96.71875000000796,
+          99.21875000000853,
+          100.46875000000739
+        ],
+        "hazard_difference_late_minus_early": 0.6999999838016645,
+        "hypothesis": "burden",
+        "identity_error": 8.881784197001252e-14,
+        "identity_prediction": 0.6999999838017533,
+        "surgery_keep": 0.1,
+        "survival_exp_minus_h_error": 1.0345058143457209e-12,
+        "survival_ratio_late_to_early": 0.49658531183443677
+      },
+      {
+        "best_position": 0,
+        "exposure_by_position": [
+          9.84375,
+          54.84375,
+          77.34375,
+          88.59375,
+          94.21875,
+          97.03125,
+          98.4375
+        ],
+        "hazard_difference_late_minus_early": 0.7874999914193581,
+        "hypothesis": "release",
+        "identity_error": 3.3306690738754696e-16,
+        "identity_prediction": 0.7874999914193578,
+        "surgery_keep": 0.1,
+        "survival_exp_minus_h_error": 1.2218004385999848e-12,
+        "survival_ratio_late_to_early": 0.45498083062086825
+      },
+      {
+        "best_position": 6,
+        "exposure_by_position": [
+          162.890625,
+          137.890625,
+          125.390625,
+          119.140625,
+          116.015625,
+          114.453125,
+          113.671875
+        ],
+        "hazard_difference_late_minus_early": -0.437499989876045,
+        "hypothesis": "burden",
+        "identity_error": 2.886579864025407e-15,
+        "identity_prediction": -0.4374999898760421,
+        "surgery_keep": 0.75,
+        "survival_exp_minus_h_error": 7.252254352607679e-13,
+        "survival_ratio_late_to_early": 1.5488302829569598
+      },
+      {
+        "best_position": 0,
+        "exposure_by_position": [
+          73.828125,
+          86.328125,
+          92.578125,
+          95.703125,
+          97.265625,
+          98.046875,
+          98.4375
+        ],
+        "hazard_difference_late_minus_early": 0.2187500122399817,
+        "hypothesis": "release",
+        "identity_error": 1.2490009027033011e-15,
+        "identity_prediction": 0.21875001223998294,
+        "surgery_keep": 0.75,
+        "survival_exp_minus_h_error": 1.1678991107544334e-12,
+        "survival_ratio_late_to_early": 0.8035225638529566
+      }
+    ],
+    "exposure_identity_is_exact_kinetic_invariant": {
+      "burden_chemo_0": true,
+      "burden_chemo_1": true,
+      "release_chemo_0": true,
+      "release_chemo_1": true
+    },
+    "max_continuous_closed_form_relative_error": 5.0162540787823674e-12,
+    "max_exposure_invariant_drift": 8.651109342783236e-14,
+    "regimes_after_removal": {
+      "antigen_driven": {
+        "committed_error": 2.5673907444456745e-15,
+        "committed_hazard_bound": 0.09999999979388464,
+        "committed_hazard_observed": 0.09999999979388208,
+        "marker_ratio_t10_to_t2": 0.021889566863806328,
+        "marker_ratio_t20_to_t2": 0.00014793495189425375,
+        "remaining_neurons_at_end": 0.5488116362071094
+      },
+      "autonomous_cns": {
+        "marker_ratio_t10_to_t2": 0.3275330811131708,
+        "marker_ratio_t20_to_t2": 0.15051984165370738,
+        "remaining_neurons_at_end": 0.1060600326085199
+      }
+    },
+    "steady_state_signature": {
+      "burden": {
+        "max_rise": 7.220890552162018e-13,
+        "never_rises": true,
+        "rises_during_first_chemo": false
+      },
+      "release": {
+        "max_rise": 3.3137062052728794,
+        "never_rises": false,
+        "rises_during_first_chemo": true
+      }
+    }
+  },
+  "integration": {
+    "max_step": 0.005,
+    "method": "fixed-step RK4"
+  },
+  "limitations": [
+    "invented rates, burdens and units",
+    "no physiological conversion",
+    "tumor growth, resistance and order-dependent surgery omitted",
+    "no anti-Yo, NfL, patient or treatment-benefit claim"
+  ],
+  "scope": "synthetic_mathematics_and_software_only_not_biological_validation",
+  "source_sha256": {
+    "validation_script": "66c506dc5f36d30776fb485b7a27736a2c044e540b876a915f5f4386eeb2ddca",
+    "vh_reactions_module": "c062e08a19e6a9ed39df2b2eec2d4f6de98c260e1c63f78381586d2108a51cde"
+  },
+  "status": "pass",
+  "tolerances": {
+    "asma": 1e-09,
+    "closed_form_relative": 1e-08,
+    "committed": 1e-08,
+    "drift": 1e-10,
+    "identity": 1e-10,
+    "survival": 1e-08
+  },
+  "virtual_human_checkout": {
+    "commit": "c88db663ad4193d12de595a1c8df8c784ad92c7d",
+    "dirty": false
+  }
+}

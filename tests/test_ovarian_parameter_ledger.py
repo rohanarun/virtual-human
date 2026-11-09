@@ -59,8 +59,8 @@ def test_missing_rows_have_null_value():
 def test_label_counts_stable():
     counts = label_counts(load_ledger())
     assert counts["KNOWN"] == 4
-    assert counts["CONJECTURE"] == 6
-    assert counts["MISSING"] == 12
+    assert counts["CONJECTURE"] == 11
+    assert counts["MISSING"] == 16
     assert sum(counts.values()) == len(load_ledger()["entries"])
 
 
@@ -77,3 +77,12 @@ def test_crossref_doi_check_live():
     report = check_dois(load_ledger())
     assert report["failures"] == 0
     assert report["unique_dois_checked"] >= 10
+
+
+def test_paraneoplastic_rows_keep_values_and_gaps():
+    by_id = {e["id"]: e for e in load_ledger()["entries"]}
+    assert by_id["P023"]["value"] == 0.21
+    assert by_id["P026"]["value"] == 129.9
+    assert by_id["P027"]["value"] == 1.6
+    for missing in ("P028", "P029", "P030", "P031"):
+        assert by_id[missing]["label"] == "MISSING" and by_id[missing]["value"] is None

@@ -78,6 +78,11 @@ A cell is ~10¹⁴ atoms, so pure CCSD(T) will never reach it. The path up:
     *Started 2026-11-05:* a from-scratch SBML core reader with exact conservation and positive-mass
     invariants, validated against libRoadRunner ([report](../auto-research/2026-11-05-E-sbml-import/report.md)).
     Still open: events, rate rules, delays, units checking, and wiring `vh.bridge` occupancy into a pathway.
+    *Added 2026-11-05:* rate-dependent **kinetic invariants** for mass-action networks
+    (`kinetic_invariant_basis`, `kinetic_residuals`), which make exposure (AUC) and clearance identities exact
+    checks ([report](../auto-research/2026-11-05-E-paraneoplastic-exposure/report.md)). Next: run the finder on
+    the imported BioModels and the PBPK graph to see whether any rate-dependent identity is present or violated,
+    and add derivatives of invariants across phases.
 11. **Uncertainty end to end.** Propagate parameter uncertainty across scales; Bayesian calibration; because every
     layer is differentiable (JAX), gradients of a clinical endpoint with respect to molecular parameters.
 
