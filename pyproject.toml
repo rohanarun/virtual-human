@@ -28,10 +28,16 @@ dependencies = [
 prep = ["openmm>=8.1", "pdbfixer>=1.9"]
 # the quantum accuracy ceiling (rungs 4-5): ab initio electronic structure + geometry optimization
 quantum = ["pyscf>=2.5", "geometric>=1.0"]
-dev = ["pytest>=8", "matplotlib>=3.8", "openmm>=8.1", "pdbfixer>=1.9", "pyscf>=2.5", "geometric>=1.0"]
+# libroadrunner is the independent SBML referee for vh.graph.sbml (tests only)
+dev = ["pytest>=8", "matplotlib>=3.8", "openmm>=8.1", "pdbfixer>=1.9", "pyscf>=2.5", "geometric>=1.0",
+       "libroadrunner>=2.7"]
 
 [tool.setuptools.packages.find]
 include = ["vh*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+  "network: tests that call external network services (Crossref)",
+]

@@ -61,7 +61,7 @@ faster than real time.
 | `vh.molecular` | From-scratch JAX engine: AMBER ff14SB force field, GB-OBC2 implicit water, autodiff forces, Langevin (BAOAB) and Verlet dynamics, L-BFGS minimization | Matches OpenMM (used only as a referee) term by term to ~1e-14 relative on real proteins; trajectories identical step by step; energy conserved ([`docs/validation_molecular.md`](docs/validation_molecular.md)) |
 | `vh.body` | From-scratch whole-body PBPK: 13 organs + blood, Rodgers & Rowland tissue partitioning, liver (well-stirred, IVIVE), kidney (filtration), oral absorption (stomach + 7-segment intestine) with gut-wall first-pass, virtual populations; solved exactly with matrix exponentials | Bottom-up midazolam predictions vs 100 clinical datasets (IV and oral) digitized by the Open Systems Pharmacology project |
 | `vh.bridge` | Unbound drug at the target organ → receptor occupancy over time; Kd ↔ binding free energy | Analytic round-trip; kinetic occupancy |
-| `vh.graph` | **Formalizes the body as a typed graph** across scales (organs↔blood flow, atoms↔bonds); graph algorithms for reachability, pathways, cycles, flow balance, bottlenecks; **conserved-flow graphs** with R/C/L edge laws, gravity, Bernoulli, Starling collapse and valves; renders and verifies subgraphs | Blood conservation (Kirchhoff) to 1e-16 on the real PBPK model; a pure graph BFS reproduces the force field's exclusion list exactly; steady flow exact against Hagen–Poiseuille/Windkessel/Starling, and the standing foot venous pressure predicted at **88.7 mmHg** vs the physiological **85–90 mmHg** range ([`docs/graph_formalization.md`](docs/graph_formalization.md), [`docs/bernoulli_veins.md`](docs/bernoulli_veins.md)) |
+| `vh.graph` | **Formalizes the body as a typed graph** across scales (organs↔blood flow, species↔reactions, atoms↔bonds); graph algorithms for reachability, pathways, cycles, flow balance, bottlenecks; **conserved-flow graphs** with R/C/L edge laws, gravity, Bernoulli, Starling collapse and valves; renders and verifies subgraphs; imports SBML reaction networks with exact conservation and consistency invariants | Blood conservation (Kirchhoff) to 1e-16 on the real PBPK model; a pure graph BFS reproduces the force field's exclusion list exactly; steady flow exact against Hagen–Poiseuille/Windkessel/Starling, and the standing foot venous pressure predicted at **88.7 mmHg** vs the physiological **85–90 mmHg** range; SBML trajectories and steady states match libRoadRunner to ~1e-9 ([`docs/graph_formalization.md`](docs/graph_formalization.md), [`docs/bernoulli_veins.md`](docs/bernoulli_veins.md)) |
 | `web/` | Real-time demo: atom-level protein dynamics and a virtual patient, live in the browser | JS engine checked against the Python engine to ≤1e-12 |
 
 The explicit-solvent engine (`vh.molecular.periodic`, `.constraints`, `.explicit_md`) adds rung 3 of the accuracy ladder: every water molecule, exact long-range electrostatics (Ewald / smooth PME), rigid-water SHAKE/RATTLE and a Monte-Carlo barostat — validated term-by-term against OpenMM Ewald (energy to 1e-13, PME to 1e-11, constraints to 1e-16).
@@ -75,16 +75,23 @@ the structural/relational class of problems — and `vh.graph` proves it. The ho
 boundary (in [`docs/graph_formalization.md`](docs/graph_formalization.md)): a graph
 solves *where / what-connects / how-much-flows / is-it-consistent*; it does **not**
 solve *how-strong / how-fast / how-it-folds* — that stays physics. The real win is a
-**typed graph that is also executable**: every edge carries the validated model
-behind it, so the graph wires the scales together and lets any part be verified
-alone.
+**typed graph with explicit model references**: an edge can name a computational
+model, and the optional [`ModelRegistry`](docs/model_contracts.md) executes a
+registered callable after checking its scalar inputs and outputs. Engine
+adapters are not registered automatically; model validation remains separate
+from checking interface compatibility.
 
 The body is already a graph at every scale — organs joined by blood flow, atoms
 joined by bonds. Formalized from the real, validated engines:
 
-<p align="center">
-  <img src="docs/img/pbpk_graph.png" width="760" alt="The whole-body model as a flow graph of organs">
-</p>
+```mermaid
+flowchart LR
+  liver -->|"CL 16.86 L/h, plasma: effective hepatic"| eliminated
+  kidney -->|"CL 0.24 L/h, plasma: nominal filtration"| eliminated
+```
+
+This view shows the clearance reporting parameters; the [complete whole-body
+Mermaid source](docs/img/pbpk_graph.mmd) also includes blood flow and absorption.
 
 Graph algorithms (all written from scratch) then give exact answers:
 
@@ -99,7 +106,7 @@ Graph algorithms (all written from scratch) then give exact answers:
 | What does an oral drug hit first? | path enumeration | `gut → liver` before systemic — **first-pass metabolism from topology** |
 | Does anything recirculate? | strongly-connected components | one loop spanning 15 compartments (systemic circulation) |
 | Where are the hubs? | betweenness centrality | arterial, venous, lung |
-| **Verify a part in isolation** | subgraph extraction | elimination subgraph clearance = full model **exactly (28.488 L/h)** |
+| **Inspect a part in isolation** | subgraph extraction | plasma-referenced clearance reporting sum **17.104 L/h**; exact IV dose/AUC **17.103 L/h** ([distinction](docs/graph_formalization.md#clearance-reporting-and-independent-verification)) |
 | **The graph verifying the engine** | BFS on the bond graph | reproduces the force field's **1687 exclusion pairs exactly** (symmetric difference 0) |
 
 That last row is the sharpest: a pure topological fact (atoms within bond-distance ≤ 3)
@@ -184,12 +191,13 @@ vh/molecular   energy.py (force field), integrate.py, minimize.py, prep.py, io.p
                periodic.py (Ewald/PME explicit solvent), constraints.py (SHAKE/RATTLE), explicit_md.py
 vh/body        physiology.py, partition.py, compound.py, pbpk.py
 vh/bridge      molecular → body coupling (Kd ↔ ΔG, receptor occupancy)
-vh/graph       core.py (typed property graph), algorithms.py, flow.py (conserved-flow solver), physiology_graph.py, render.py
+vh/graph       core.py (typed property graph), algorithms.py, flow.py (conserved-flow solver), physiology_graph.py, render.py,
+               contracts.py (model interfaces), sbml.py (SBML import), stoichiometry.py (exact algebra)
 tests/         pytest suite
 scripts/       validation report + figure generators
 docs/          accuracy_ladder, graph_formalization, feasibility, validation reports, architecture, roadmap
 web/           real-time browser engine + demo
-data/          structures, tissue composition, clinical observations
+data/          structures, tissue composition, clinical observations, SBML models (CC0)
 ```
 
 ## Not a medical device
@@ -210,6 +218,8 @@ research tracks, and how to publish work under [`auto-research/`](auto-research/
 - **Rohan Arun** ([@rohanarun](https://github.com/rohanarun)) — creator and maintainer; direction and design.
 - **Claude** (Anthropic) — implemented and validated the engines under the above direction, in pair with the maintainer.
 - **OpenCode agent (DeepSeek V4.1 Flash Free)** — conserved-flow graph, vein model, Bernoulli derivation, and flow validation under the above direction.
+- **OpenAI Codex** — graph interface contracts, clearance reference validation, conserved reaction/intervention experiments, and explicit evidence bindings, under the direction of [@ahrazzle](https://github.com/ahrazzle).
+- **Claude** (Anthropic), Foundation-0 fork — SBML import with exact conservation and positive-mass consistency invariants.
 - **MikeMike88 with Claude Code (Claude Opus 5.5)** — steady-state complementarity: uniqueness proof, finite pivoting solver, scaled convergence test, enumeration referee.
 
 New contributors (human or agent): add yourself here in your pull request. See

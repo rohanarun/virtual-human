@@ -70,6 +70,39 @@ def test_connected_components_and_subgraph():
     assert set(sub.nodes) == {"a", "b"} and len(sub.edges) == 1
 
 
+def test_subgraph_order_is_reproducible_across_hash_seeds():
+    # String-set iteration order changes with PYTHONHASHSEED; a subgraph must
+    # follow the parent graph's order so its JSON and Mermaid are byte-stable.
+    import os
+    import subprocess
+    import sys
+
+    g = Graph("ordered")
+    for n in "fedcba":
+        g.add_node(n, "x")
+    g.add_edge("f", "a", "e")
+    assert list(g.subgraph(["a", "c", "f"]).nodes) == ["f", "c", "a"]
+    assert list(g.subgraph(reversed(["a", "c", "f"])).nodes) == ["f", "c", "a"]
+    with pytest.raises(KeyError, match="unknown nodes"):
+        g.subgraph(["a", "missing"])
+
+    code = ("from vh.body import PBPKModel, MIDAZOLAM\n"
+            "from vh.graph.physiology_graph import build_pbpk_graph\n"
+            "from vh.graph.render import to_mermaid\n"
+            "g, _ = build_pbpk_graph(PBPKModel(MIDAZOLAM))\n"
+            "ids = ['arterial', 'liver', 'kidney', 'venous', 'gut', 'spleen', 'pancreas', 'eliminated']\n"
+            "print(to_mermaid(g.subgraph(set(ids))))\n")
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    outputs = set()
+    for seed in ("0", "1", "2", "3"):
+        env = {**os.environ, "PYTHONHASHSEED": seed,
+               "PYTHONPATH": os.pathsep.join(filter(None, [root, os.environ.get("PYTHONPATH")]))}
+        run = subprocess.run([sys.executable, "-c", code], env=env, cwd=root,
+                             capture_output=True, text=True, check=True, timeout=120)
+        outputs.add(run.stdout)
+    assert len(outputs) == 1
+
+
 def test_schema_validation_catches_bad_edges():
     schema = Schema(node_types={"blood": set(), "organ": {"volume"}},
                     edge_rules=[EdgeRule("flow", {"blood", "organ"}, {"blood", "organ"}, {"flow"})])

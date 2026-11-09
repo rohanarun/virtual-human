@@ -1,0 +1,113 @@
+{
+  "ledger_sha256": "37695eac4ed4c854b86c7e37a7e7324a462f69bf33c2c90fa2000db4955c0478",
+  "ovarian_readiness": {
+    "interpretation": "Readiness for these four necessary inputs only, not a complete model specification. KNOWN describes source access, not applicability; prevalence and hazard ratios are not kinetic rates.",
+    "ready": false,
+    "requirements": [
+      {
+        "ledger_record": {
+          "citation": {
+            "doi": "10.1073/pnas.2026663118",
+            "first_author_surname": "Gu",
+            "title": "Computational modeling of ovarian cancer dynamics suggests optimal strategies for therapy and screening",
+            "year": 2021
+          },
+          "derivation": null,
+          "id": "P015",
+          "label": "MISSING",
+          "limits": "Gu et al. simulation parameters not copied into this ledger.",
+          "locator": "No single untreated HGSOC doubling time tabulated for ledger extraction",
+          "population": "Newly diagnosed HGSOC before systemic therapy",
+          "quantity": "Untreated high-grade serous ovarian cancer volumetric doubling time",
+          "range": null,
+          "units": null,
+          "value": null
+        },
+        "ready": false,
+        "reason": "missing estimate",
+        "record_id": "P015",
+        "required_role": "tumor_growth"
+      },
+      {
+        "ledger_record": {
+          "citation": {
+            "doi": "10.1016/j.jtbi.2006.02.001",
+            "first_author_surname": "Kohandel",
+            "title": "Mathematical modeling of ovarian cancer treatments: Sequencing of surgery and chemotherapy",
+            "year": 2006
+          },
+          "derivation": null,
+          "id": "P016",
+          "label": "MISSING",
+          "limits": "See P021 for qualitative prior art.",
+          "locator": "Model uses fixed-fraction surgery operator; no patient-derived numeric fraction",
+          "population": "Ovarian cancer patients with quantitative debulking fractions",
+          "quantity": "Proportional intraoperative tumor retention fraction used in sequencing models (empirical estimate)",
+          "range": null,
+          "units": null,
+          "value": null
+        },
+        "ready": false,
+        "reason": "missing estimate",
+        "record_id": "P016",
+        "required_role": "surgical_retention"
+      },
+      {
+        "ledger_record": {
+          "citation": {
+            "doi": "10.1073/pnas.2026663118",
+            "first_author_surname": "Gu",
+            "title": "Computational modeling of ovarian cancer dynamics suggests optimal strategies for therapy and screening",
+            "year": 2021
+          },
+          "derivation": null,
+          "id": "P019",
+          "label": "MISSING",
+          "limits": "Add when a model contract consumes PK parameters.",
+          "locator": "Not applicable: sequence experiments use dimensionless burden units",
+          "population": "Virtual-human ovarian treatment-sequence graph experiments",
+          "quantity": "Population carboplatin clearance for whole-body PBPK coupling in ovarian treatment-sequence models",
+          "range": null,
+          "units": null,
+          "value": null
+        },
+        "ready": false,
+        "reason": "missing estimate",
+        "record_id": "P019",
+        "required_role": "carboplatin_clearance"
+      },
+      {
+        "ledger_record": {
+          "citation": {
+            "doi": "10.1073/pnas.2026663118",
+            "first_author_surname": "Gu",
+            "title": "Computational modeling of ovarian cancer dynamics suggests optimal strategies for therapy and screening",
+            "year": 2021
+          },
+          "derivation": null,
+          "id": "P020",
+          "label": "MISSING",
+          "limits": "Add when a model contract consumes PK parameters.",
+          "locator": "Not applicable: scalar chemotherapy operators in sequence experiments",
+          "population": "Virtual-human ovarian treatment-sequence graph experiments",
+          "quantity": "Population paclitaxel central volume and clearance for sequence models",
+          "range": null,
+          "units": null,
+          "value": null
+        },
+        "ready": false,
+        "reason": "missing estimate",
+        "record_id": "P020",
+        "required_role": "paclitaxel_volume_and_clearance"
+      }
+    ]
+  },
+  "schema_version": 1,
+  "synthetic_validation": {
+    "cases": 3,
+    "interpretation": "Nominal synthetic arithmetic only; no output uncertainty or biological validation",
+    "maximum_absolute_error_L_per_h": 0.0,
+    "passed": true,
+    "tolerance_L_per_h": 1e-12
+  }
+}

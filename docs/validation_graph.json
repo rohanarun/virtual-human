@@ -16,12 +16,21 @@
    "venous",
    "lung"
   ],
-  "hepatic_fraction": 0.9914444331832803
+  "hepatic_reported_parameter_fraction": 0.985750270506149,
+  "clearance_units": "L/h",
+  "clearance_reference_basis": "plasma"
  },
- "partial_verification": {
-  "subgraph_cl": 28.48825272206046,
-  "full_cl": 28.48825272206046,
-  "match": true
+ "clearance_reporting": {
+  "units": "L/h",
+  "reference_basis": "plasma",
+  "subgraph_parameter_sum": 17.104405368562304,
+  "model_reported_parameter_sum": 17.104405368562304,
+  "export_matches": true,
+  "iv_dose_over_venous_plasma_auc": 17.103069745580346,
+  "analytic_well_stirred_clearance": 17.103069745580346,
+  "analytic_absolute_error": 0.0,
+  "reported_sum_minus_dose_over_auc": 0.0013356229819585508,
+  "limitation": "Reported renal filtration parameter omits finite-flow extraction; export agreement is not independent model validation."
  },
  "molecular": {
   "n_atoms": 304,

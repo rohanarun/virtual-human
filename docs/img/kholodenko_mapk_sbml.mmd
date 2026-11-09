@@ -1,0 +1,62 @@
+%% Kholodenko 2000 MAPK cascade imported from SBML (BIOMD0000000010)
+flowchart LR
+  MKKK["Mos"]
+  MKKK_P["Mos-P"]
+  MKK["Mek1"]
+  MKK_P["Mek1-P"]
+  MKK_PP["Mek1-PP"]
+  MAPK["Erk2"]
+  MAPK_P["Erk2-P"]
+  MAPK_PP["Erk2-PP"]
+  J0["MAPKKK activation"]
+  J1["MAPKKK inactivation"]
+  J2["phosphorylation of MAPKK"]
+  J3["phosphorylation of MAPKK-P"]
+  J4["dephosphorylation of MAPKK-PP"]
+  J5["dephosphorylation of MAPKK-P"]
+  J6["phosphorylation of MAPK"]
+  J7["phosphorylation of MAPK-P"]
+  J8["dephosphorylation of MAPK-PP"]
+  J9["dephosphorylation of MAPK-P"]
+  moiety_1["MKKK + MKKK_P"]
+  moiety_2["MKK + MKK_P + MKK_PP"]
+  moiety_3["MAPK + MAPK_P + MAPK_PP"]
+  MKKK --> J0
+  J0 --> MKKK_P
+  MAPK_PP -->|"modifies"| J0
+  MKKK_P --> J1
+  J1 --> MKKK
+  MKK --> J2
+  J2 --> MKK_P
+  MKKK_P -->|"modifies"| J2
+  MKK_P --> J3
+  J3 --> MKK_PP
+  MKKK_P -->|"modifies"| J3
+  MKK_PP --> J4
+  J4 --> MKK_P
+  MKK_P --> J5
+  J5 --> MKK
+  MAPK --> J6
+  J6 --> MAPK_P
+  MKK_PP -->|"modifies"| J6
+  MAPK_P --> J7
+  J7 --> MAPK_PP
+  MKK_PP -->|"modifies"| J7
+  MAPK_PP --> J8
+  J8 --> MAPK_P
+  MAPK_P --> J9
+  J9 --> MAPK
+  MKKK --> moiety_1
+  MKKK_P --> moiety_1
+  MKK --> moiety_2
+  MKK_P --> moiety_2
+  MKK_PP --> moiety_2
+  MAPK --> moiety_3
+  MAPK_P --> moiety_3
+  MAPK_PP --> moiety_3
+  classDef c_species fill:#2B44C4,stroke:#222,color:#ffffff;
+  class MKKK,MKKK_P,MKK,MKK_P,MKK_PP,MAPK,MAPK_P,MAPK_PP c_species;
+  classDef c_reaction fill:#586379,stroke:#222,color:#ffffff;
+  class J0,J1,J2,J3,J4,J5,J6,J7,J8,J9 c_reaction;
+  classDef c_moiety fill:#1A8A54,stroke:#222,color:#ffffff;
+  class moiety_1,moiety_2,moiety_3 c_moiety;

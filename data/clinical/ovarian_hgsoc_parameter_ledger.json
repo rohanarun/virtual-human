@@ -1,0 +1,419 @@
+{
+  "schema_version": 1,
+  "ledger_id": "ovarian-hgsoc-treatment-sequence",
+  "checked_on": "2026-11-05",
+  "scope": "Published population and trial parameters for high-grade serous ovarian cancer (HGSOC) and first-line or maintenance treatment-sequence modeling. Public primary literature only; supports Foundation-0/project-asma PR #47 assumption audits and virtual-human graph reaction experiments. Not fitted to private data.",
+  "extends": {
+    "description": "Row identifiers, citation blocks (doi, title, locator) and label vocabulary {KNOWN, CONJECTURE, MISSING} follow the public registry pattern in Foundation-0/project-asma PR #47 (registries/*-sources.json). Quantitative value/range/units/population fields are virtual-human extensions stored under data/clinical/ alongside other provenance-annotated inputs.",
+    "references": [
+      {
+        "repository": "Foundation-0/project-asma",
+        "pull_request": 47,
+        "artifact": "registries/rosen-treatment-sequence-sources.json"
+      },
+      {
+        "repository": "Foundation-0/virtual-human",
+        "pull_request": 3,
+        "artifact": "docs/project-asma-integration.md"
+      }
+    ]
+  },
+  "entries": [
+    {
+      "id": "P001",
+      "quantity": "Prognostic CA-125 half-life threshold during induction chemotherapy (progression risk dichotomy)",
+      "value": 20,
+      "range": { "kind": "point", "low": null, "high": null, "level": null },
+      "units": "days",
+      "population": "Epithelial ovarian cancer; n=85; Rotterdam Cancer Institute induction chemotherapy cohort (1988 publication)",
+      "citation": {
+        "doi": "10.1016/0090-8258(88)90244-2",
+        "first_author_surname": "van der Burg",
+        "year": 1988,
+        "title": "Ovarian cancer: The prognostic value of the serum half-life of CA125 during induction chemotherapy"
+      },
+      "locator": "PubMed abstract (PMID 3164697); full article not openly accessible",
+      "label": "CONJECTURE",
+      "derivation": "value from abstract only; reports half-life ≥20 days versus <20 days prognostic groups (3.2-fold progression rate; median time to progression 11 vs 43 months). Mean half-life in days not stated in abstract.",
+      "limits": "Mixed histologies; 1988 assay era. Not a continuous kinetic rate constant for modern sequence models."
+    },
+    {
+      "id": "P002",
+      "quantity": "Germline BRCA1 mutation prevalence in TCGA high-grade serous ovarian carcinoma exome cohort",
+      "value": 0.09,
+      "range": { "kind": "point", "low": null, "high": null, "level": null },
+      "units": "fraction of cases",
+      "population": "TCGA HGS-OvCa; n=316 with whole-exome sequence (of 489 HGS-OvCa total)",
+      "citation": {
+        "doi": "10.1038/nature10166",
+        "first_author_surname": "Network",
+        "year": 2011,
+        "title": "Integrated genomic analyses of ovarian carcinoma"
+      },
+      "locator": "verified from full text, PMC3163504, Results (BRCA1/BRCA2 germline mutation frequencies in 316 exome samples)",
+      "label": "KNOWN",
+      "derivation": null,
+      "limits": "Germline component only in this row; same paragraph reports somatic BRCA1/2 mutations in an additional 3% of cases (combined interpretation)."
+    },
+    {
+      "id": "P003",
+      "quantity": "Germline BRCA2 mutation prevalence in TCGA high-grade serous ovarian carcinoma exome cohort",
+      "value": 0.08,
+      "range": { "kind": "point", "low": null, "high": null, "level": null },
+      "units": "fraction of cases",
+      "population": "TCGA HGS-OvCa; n=316 with whole-exome sequence",
+      "citation": {
+        "doi": "10.1038/nature10166",
+        "first_author_surname": "Network",
+        "year": 2011,
+        "title": "Integrated genomic analyses of ovarian carcinoma"
+      },
+      "locator": "verified from full text, PMC3163504, Results (BRCA1/BRCA2 germline mutation frequencies in 316 exome samples)",
+      "label": "KNOWN",
+      "derivation": null,
+      "limits": "Germline component only; see P002 limits for somatic add-on sentence in the same Results passage."
+    },
+    {
+      "id": "P004",
+      "quantity": "Germline BRCA1 or BRCA2 mutation attribution in high-grade serous ovarian carcinoma (TCGA)",
+      "value": 0.13,
+      "range": { "kind": "point", "low": null, "high": null, "level": null },
+      "units": "fraction of HGS-OvCa cases",
+      "population": "TCGA HGS-OvCa cohort (489 clinically annotated tumors described in the paper)",
+      "citation": {
+        "doi": "10.1038/nature10166",
+        "first_author_surname": "Network",
+        "year": 2011,
+        "title": "Integrated genomic analyses of ovarian carcinoma"
+      },
+      "locator": "verified from full text, PMC3163504, Background/Introduction (HGS-OvCa germline BRCA1/2 attribution)",
+      "label": "KNOWN",
+      "derivation": null,
+      "limits": "Population fraction language in primary text ('approximately 13% ... attributable to germline mutations')."
+    },
+    {
+      "id": "P005",
+      "quantity": "Homologous recombination (HR) pathway defect prevalence in TCGA high-grade serous ovarian carcinoma",
+      "value": 0.5,
+      "range": { "kind": "point", "low": null, "high": null, "level": null },
+      "units": "fraction of HGS-OvCa tumors (approximate)",
+      "population": "TCGA HGS-OvCa; n=489; pathway and mutation analyses in integrated genomic study",
+      "citation": {
+        "doi": "10.1038/nature10166",
+        "first_author_surname": "Network",
+        "year": 2011,
+        "title": "Integrated genomic analyses of ovarian carcinoma"
+      },
+      "locator": "verified from full text, PMC3163504, Abstract ('homologous recombination is defective in about half of tumors') and Results ('HR defects may be present in approximately half of HGS-OvCa')",
+      "label": "KNOWN",
+      "derivation": null,
+      "limits": "Primary source gives approximate 'half' wording rather than a single tabulated HRD assay prevalence; distinct from modern Myriad/LOH assay definitions used in later trials."
+    },
+    {
+      "id": "P006",
+      "quantity": "Myriad/LOH-based HRD assay prevalence in untreated HGSOC (trial assay definition)",
+      "value": null,
+      "range": null,
+      "units": null,
+      "population": "Untreated HGSOC with contemporary HRD test as used in PARP maintenance trials",
+      "citation": {
+        "doi": "10.1038/nature10166",
+        "first_author_surname": "Network",
+        "year": 2011,
+        "title": "Integrated genomic analyses of ovarian carcinoma"
+      },
+      "locator": "TCGA 2011 reports HR pathway defects (~50%, see P005) but not trial-compatible HRD assay prevalence",
+      "label": "MISSING",
+      "derivation": null,
+      "limits": "Use P005 for TCGA HR-pathway 'half' statement only; do not map directly to PAOLA-1 HRD positivity without assay translation."
+    },
+    {
+      "id": "P007",
+      "quantity": "Overall survival hazard ratio for no gross residual disease versus any visible residual (advanced ovarian cancer meta-analysis)",
+      "value": null,
+      "range": null,
+      "units": null,
+      "population": "Advanced-stage epithelial ovarian cancer; Chang et al. 2013 meta-analysis (PubMed PMID 23747291)",
+      "citation": {
+        "doi": "10.1016/j.ygyno.2013.05.040",
+        "first_author_surname": "Chang",
+        "year": 2013,
+        "title": "Survival impact of complete cytoreduction to no gross residual disease for advanced-stage ovarian cancer: A meta-analysis"
+      },
+      "locator": "Publisher full text not openly accessible; PubMed abstract reports weighted median survival regression, not a pooled OS hazard ratio",
+      "label": "MISSING",
+      "derivation": null,
+      "limits": "Prior ledger HR 0.52 removed; do not use without primary-table verification."
+    },
+    {
+      "id": "P008",
+      "quantity": "Progression-free survival hazard ratio for no gross residual disease versus any visible residual (same meta-analysis)",
+      "value": null,
+      "range": null,
+      "units": null,
+      "population": "Advanced-stage epithelial ovarian cancer; Chang et al. 2013 meta-analysis",
+      "citation": {
+        "doi": "10.1016/j.ygyno.2013.05.040",
+        "first_author_surname": "Chang",
+        "year": 2013,
+        "title": "Survival impact of complete cytoreduction to no gross residual disease for advanced-stage ovarian cancer: A meta-analysis"
+      },
+      "locator": "Publisher full text not openly accessible; abstract does not report pooled PFS hazard ratio",
+      "label": "MISSING",
+      "derivation": null,
+      "limits": "See P007."
+    },
+    {
+      "id": "P009",
+      "quantity": "Progression-free survival hazard ratio for PARP inhibitor (olaparib) maintenance versus placebo after first-line platinum response (SOLO1)",
+      "value": 0.3,
+      "range": { "kind": "CI95", "low": 0.23, "high": 0.41, "level": 0.95 },
+      "units": "hazard ratio (dimensionless)",
+      "population": "Newly diagnosed advanced ovarian cancer with BRCA1/2 mutation and platinum response; n=391 randomized (260 olaparib, 131 placebo); PubMed PMID 30345884",
+      "citation": {
+        "doi": "10.1056/NEJMoa1810858",
+        "first_author_surname": "Moore",
+        "year": 2018,
+        "title": "Maintenance Olaparib in Patients with Newly Diagnosed Advanced Ovarian Cancer"
+      },
+      "locator": "PubMed abstract Results; NEJM full text not openly accessible to this build",
+      "label": "CONJECTURE",
+      "derivation": "value from abstract only",
+      "limits": "Investigator-assessed PFS; maintenance after response, not surgery–chemotherapy sequencing."
+    },
+    {
+      "id": "P010",
+      "quantity": "Investigator-assessed PFS hazard ratio for olaparib plus bevacizumab versus placebo plus bevacizumab (PAOLA-1, ITT)",
+      "value": 0.59,
+      "range": { "kind": "CI95", "low": 0.49, "high": 0.72, "level": 0.95 },
+      "units": "hazard ratio (dimensionless)",
+      "population": "Newly diagnosed advanced high-grade ovarian cancer post platinum–taxane plus bevacizumab; n=806 randomized; PubMed PMID 31851799",
+      "citation": {
+        "doi": "10.1056/NEJMoa1911361",
+        "first_author_surname": "Ray-Coquard",
+        "year": 2019,
+        "title": "Olaparib plus Bevacizumab as First-Line Maintenance in Ovarian Cancer"
+      },
+      "locator": "PubMed abstract Results; NEJM full text not openly accessible to this build",
+      "label": "CONJECTURE",
+      "derivation": "value from abstract only",
+      "limits": "Both arms include bevacizumab maintenance."
+    },
+    {
+      "id": "P011",
+      "quantity": "PFS hazard ratio for olaparib plus bevacizumab versus placebo plus bevacizumab in HRD-positive tumors (PAOLA-1)",
+      "value": 0.33,
+      "range": { "kind": "CI95", "low": 0.25, "high": 0.45, "level": 0.95 },
+      "units": "hazard ratio (dimensionless)",
+      "population": "PAOLA-1 HRD-positive subgroup; PubMed PMID 31851799",
+      "citation": {
+        "doi": "10.1056/NEJMoa1911361",
+        "first_author_surname": "Ray-Coquard",
+        "year": 2019,
+        "title": "Olaparib plus Bevacizumab as First-Line Maintenance in Ovarian Cancer"
+      },
+      "locator": "PubMed abstract Results (HRD-positive subgroup); NEJM full text not openly accessible to this build",
+      "label": "CONJECTURE",
+      "derivation": "value from abstract only",
+      "limits": "Trial-specific HRD definition."
+    },
+    {
+      "id": "P012",
+      "quantity": "Clinical objective response rate after carboplatin plus paclitaxel in optimally resected stage III ovarian cancer (GOG-111 comparison)",
+      "value": null,
+      "range": null,
+      "units": null,
+      "population": "Optimally resected stage III ovarian cancer; GOG-111 class trial (PubMed PMID 12860964); n=792 enrolled",
+      "citation": {
+        "doi": "10.1200/JCO.2003.02.153",
+        "first_author_surname": "Ozols",
+        "year": 2003,
+        "title": "Phase III Trial of Carboplatin and Paclitaxel Compared With Cisplatin and Paclitaxel in Patients With Optimally Resected Stage III Ovarian Cancer: A Gynecologic Oncology Group Study"
+      },
+      "locator": "PubMed abstract reports PFS/OS medians and relative risks only; objective response rate not stated in abstract; JCO full text not openly accessible",
+      "label": "MISSING",
+      "derivation": null,
+      "limits": "Prior value 0.77 withdrawn pending primary-table verification."
+    },
+    {
+      "id": "P013",
+      "quantity": "Platinum-free interval threshold defining platinum-sensitive recurrent disease (6 months)",
+      "value": null,
+      "range": null,
+      "units": null,
+      "population": "Recurrent epithelial ovarian cancer",
+      "citation": {
+        "doi": "10.1200/JCO.2001.19.4.1001",
+        "first_author_surname": "Markman",
+        "year": 2001,
+        "title": "Phase III Trial of Standard-Dose Intravenous Cisplatin Plus Paclitaxel Versus Moderately High-Dose Carboplatin Followed by Intravenous Paclitaxel and Intraperitoneal Cisplatin in Small-Volume Stage III Ovarian Carcinoma: An Intergroup Study of the Gynecologic Oncology Group, Southwestern Oncology Group, and Eastern Cooperative Oncology Group"
+      },
+      "locator": "PubMed abstract (PMID 11181662) does not define a 6-month platinum-free interval; full text not openly accessible",
+      "label": "MISSING",
+      "derivation": null,
+      "limits": "Operational 6-month platinum-sensitive definition widely used but not verified from an open primary source in this ledger revision."
+    },
+    {
+      "id": "P014",
+      "quantity": "Distribution parameters (mean and standard deviation) of platinum-free interval after first-line therapy in HGSOC",
+      "value": null,
+      "range": null,
+      "units": null,
+      "population": "HGSOC completing first-line platinum-based therapy",
+      "citation": {
+        "doi": "10.1016/j.ygyno.2019.07.008",
+        "first_author_surname": "Dockery",
+        "year": 2019,
+        "title": "Extending the platinum-free interval: The impact of omitting 2nd line platinum chemotherapy in intermediate platinum-sensitive ovarian cancer"
+      },
+      "locator": "No parametric PFI distribution identified in open full text during review",
+      "label": "MISSING",
+      "derivation": null,
+      "limits": "Observational series use categorical bins."
+    },
+    {
+      "id": "P015",
+      "quantity": "Untreated high-grade serous ovarian cancer volumetric doubling time",
+      "value": null,
+      "range": null,
+      "units": null,
+      "population": "Newly diagnosed HGSOC before systemic therapy",
+      "citation": {
+        "doi": "10.1073/pnas.2026663118",
+        "first_author_surname": "Gu",
+        "year": 2021,
+        "title": "Computational modeling of ovarian cancer dynamics suggests optimal strategies for therapy and screening"
+      },
+      "locator": "No single untreated HGSOC doubling time tabulated for ledger extraction",
+      "label": "MISSING",
+      "derivation": null,
+      "limits": "Gu et al. simulation parameters not copied into this ledger."
+    },
+    {
+      "id": "P016",
+      "quantity": "Proportional intraoperative tumor retention fraction used in sequencing models (empirical estimate)",
+      "value": null,
+      "range": null,
+      "units": null,
+      "population": "Ovarian cancer patients with quantitative debulking fractions",
+      "citation": {
+        "doi": "10.1016/j.jtbi.2006.02.001",
+        "first_author_surname": "Kohandel",
+        "year": 2006,
+        "title": "Mathematical modeling of ovarian cancer treatments: Sequencing of surgery and chemotherapy"
+      },
+      "locator": "Model uses fixed-fraction surgery operator; no patient-derived numeric fraction",
+      "label": "MISSING",
+      "derivation": null,
+      "limits": "See P021 for qualitative prior art."
+    },
+    {
+      "id": "P017",
+      "quantity": "12-month clinical recurrence rate after completion of first-line platinum–taxane chemotherapy in advanced HGSOC",
+      "value": null,
+      "range": null,
+      "units": null,
+      "population": "Advanced HGSOC after first-line platinum doublet",
+      "citation": {
+        "doi": "10.1056/nejmoa1103799",
+        "first_author_surname": "Perren",
+        "year": 2011,
+        "title": "A Phase 3 Trial of Bevacizumab in Ovarian Cancer"
+      },
+      "locator": "ICON7 primary publication does not tabulate standalone 12-month recurrence proportion in open full text reviewed here",
+      "label": "MISSING",
+      "derivation": null,
+      "limits": "Use trial PFS landmarks where explicitly reported (see CONJECTURE maintenance rows)."
+    },
+    {
+      "id": "P018",
+      "quantity": "Median progression-free survival in SOLO1 placebo maintenance arm (from end of chemotherapy)",
+      "value": null,
+      "range": null,
+      "units": null,
+      "population": "SOLO1 placebo arm; BRCA-mutated advanced ovarian cancer; PubMed PMID 30345884",
+      "citation": {
+        "doi": "10.1056/NEJMoa1810858",
+        "first_author_surname": "Moore",
+        "year": 2018,
+        "title": "Maintenance Olaparib in Patients with Newly Diagnosed Advanced Ovarian Cancer"
+      },
+      "locator": "PubMed abstract reports 3-year landmark (27% placebo) but not placebo median 13.8 months; NEJM full text not openly accessible",
+      "label": "MISSING",
+      "derivation": null,
+      "limits": "Prior median 13.8 months withdrawn pending open full-text table verification."
+    },
+    {
+      "id": "P019",
+      "quantity": "Population carboplatin clearance for whole-body PBPK coupling in ovarian treatment-sequence models",
+      "value": null,
+      "range": null,
+      "units": null,
+      "population": "Virtual-human ovarian treatment-sequence graph experiments",
+      "citation": {
+        "doi": "10.1073/pnas.2026663118",
+        "first_author_surname": "Gu",
+        "year": 2021,
+        "title": "Computational modeling of ovarian cancer dynamics suggests optimal strategies for therapy and screening"
+      },
+      "locator": "Not applicable: sequence experiments use dimensionless burden units",
+      "label": "MISSING",
+      "derivation": null,
+      "limits": "Add when a model contract consumes PK parameters."
+    },
+    {
+      "id": "P020",
+      "quantity": "Population paclitaxel central volume and clearance for sequence models",
+      "value": null,
+      "range": null,
+      "units": null,
+      "population": "Virtual-human ovarian treatment-sequence graph experiments",
+      "citation": {
+        "doi": "10.1073/pnas.2026663118",
+        "first_author_surname": "Gu",
+        "year": 2021,
+        "title": "Computational modeling of ovarian cancer dynamics suggests optimal strategies for therapy and screening"
+      },
+      "locator": "Not applicable: scalar chemotherapy operators in sequence experiments",
+      "label": "MISSING",
+      "derivation": null,
+      "limits": "Add when a model contract consumes PK parameters."
+    },
+    {
+      "id": "P021",
+      "quantity": "Fixed-fraction surgical debulking as explicit sequencing prior art (qualitative)",
+      "value": 1,
+      "range": { "kind": "categorical", "categories": ["fixed-fraction_surgery_operator_present"] },
+      "units": "categorical indicator",
+      "population": "Mathematical modeling literature (ovarian sequencing)",
+      "citation": {
+        "doi": "10.1016/j.jtbi.2006.02.001",
+        "first_author_surname": "Kohandel",
+        "year": 2006,
+        "title": "Mathematical modeling of ovarian cancer treatments: Sequencing of surgery and chemotherapy"
+      },
+      "locator": "PubMed abstract (PMID 16580022); publisher full text not openly accessible",
+      "label": "CONJECTURE",
+      "derivation": "value from abstract only ('Surgery is assumed to eliminate a fixed fraction of tumor cells instantaneously')",
+      "limits": "Qualitative operator flag; numeric fraction remains MISSING (P016)."
+    },
+    {
+      "id": "P022",
+      "quantity": "Median investigator-assessed PFS with bevacizumab-only maintenance in PAOLA-1 control arm",
+      "value": 16.6,
+      "range": { "kind": "point", "low": null, "high": null, "level": null },
+      "units": "months from randomization",
+      "population": "PAOLA-1 placebo plus bevacizumab arm; n=269; PubMed PMID 31851799",
+      "citation": {
+        "doi": "10.1056/NEJMoa1911361",
+        "first_author_surname": "Ray-Coquard",
+        "year": 2019,
+        "title": "Olaparib plus Bevacizumab as First-Line Maintenance in Ovarian Cancer"
+      },
+      "locator": "PubMed abstract Results; NEJM full text not openly accessible to this build",
+      "label": "CONJECTURE",
+      "derivation": "value from abstract only",
+      "limits": "Includes bevacizumab maintenance."
+    }
+  ]
+}

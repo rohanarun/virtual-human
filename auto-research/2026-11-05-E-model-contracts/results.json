@@ -1,0 +1,40 @@
+{
+  "fixture_type": "synthetic; no experimental uncertainty or parameter fitting",
+  "authority": "exact elimination rate / plasma concentration; rational input fixtures",
+  "tolerance_l_h": 1e-12,
+  "max_absolute_error_l_h": 0.0,
+  "cases": [
+    {
+      "rate_mg_h": "3",
+      "blood_concentration_mg_l": "3/10",
+      "plasma_concentration_mg_l": "1/2",
+      "computed_clearance_l_h": 6.0,
+      "analytic_clearance_l_h": 6.0,
+      "absolute_error_l_h": 0.0
+    },
+    {
+      "rate_mg_h": "5",
+      "blood_concentration_mg_l": "1/4",
+      "plasma_concentration_mg_l": "1/2",
+      "computed_clearance_l_h": 10.0,
+      "analytic_clearance_l_h": 10.0,
+      "absolute_error_l_h": 0.0
+    },
+    {
+      "rate_mg_h": "7",
+      "blood_concentration_mg_l": "1/2",
+      "plasma_concentration_mg_l": "1/4",
+      "computed_clearance_l_h": 28.0,
+      "analytic_clearance_l_h": 28.0,
+      "absolute_error_l_h": 0.0
+    },
+    {
+      "rate_mg_h": "9",
+      "blood_concentration_mg_l": "3/4",
+      "plasma_concentration_mg_l": "1/2",
+      "computed_clearance_l_h": 18.0,
+      "analytic_clearance_l_h": 18.0,
+      "absolute_error_l_h": 0.0
+    }
+  ]
+}
