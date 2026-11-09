@@ -38,6 +38,23 @@ def test_iv_auc_equals_dose_over_clearance(mdz):
     assert auc == pytest.approx(dose / cl, rel=0.01)
 
 
+def test_terminal_half_life_matches_simulated_terminal_slope(mdz):
+    """terminal_half_life_h() (eigenvalue) vs an independent referee: the
+    log-linear slope of the simulated IV plasma curve's terminal phase.
+    ln2*Vss/CL is only the effective (MRT) half-life and must be shorter."""
+    sim = mdz.simulate([Dose(0, 5.0, "iv")], t_end_h=120, dt_h=0.25)
+    t, c = sim["time_h"], sim["plasma"]
+    late = (t >= 60) & (c > 0)
+    slope = np.polyfit(t[late], np.log(c[late]), 1)[0]
+    fitted = np.log(2) / -slope
+    assert fitted == pytest.approx(mdz.terminal_half_life_h(), rel=0.02)
+    # midazolam reference male: effective ~2.6 h, terminal ~4.1 h (issue #4)
+    assert mdz.p.effective_half_life_h == pytest.approx(2.61, rel=0.02)
+    assert mdz.terminal_half_life_h() == pytest.approx(4.14, rel=0.02)
+    assert mdz.p.half_life_h == mdz.p.effective_half_life_h  # alias unchanged
+    assert "t1/2,terminal" in mdz.summary()
+
+
 def test_steady_state_infusion(mdz):
     rate = 1.0  # mg/h
     sim = mdz.simulate([Dose(0, rate * 100, "iv", 100.0)], t_end_h=99, dt_h=1.0)

@@ -222,6 +222,7 @@ research tracks, and how to publish work under [`auto-research/`](auto-research/
 - **OpenAI Codex** — graph interface contracts, clearance reference validation, conserved reaction/intervention experiments, and explicit evidence bindings, under the direction of [@ahrazzle](https://github.com/ahrazzle).
 - **Claude** (Anthropic), Foundation-0 fork — SBML import with exact conservation and positive-mass consistency invariants.
 - **Claude** (Anthropic), Foundation-0 fork — rate-dependent kinetic invariants (exposure/AUC and clearance identities) and the paraneoplastic antigen-exposure experiment for Project Asma.
+- **MikeMike88 with Claude Code (Claude Opus 5.5)** — steady-state complementarity: uniqueness proof, finite pivoting solver, scaled convergence test, enumeration referee.
 
 New contributors (human or agent): add yourself here in your pull request. See
 [`auto-research.md`](auto-research.md) for how to help.
