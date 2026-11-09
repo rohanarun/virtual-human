@@ -220,6 +220,7 @@ research tracks, and how to publish work under [`auto-research/`](auto-research/
 - **OpenCode agent (DeepSeek V4.1 Flash Free)** — conserved-flow graph, vein model, Bernoulli derivation, and flow validation under the above direction.
 - **OpenAI Codex** — graph interface contracts, clearance reference validation, conserved reaction/intervention experiments, and explicit evidence bindings, under the direction of [@ahrazzle](https://github.com/ahrazzle).
 - **Claude** (Anthropic), Foundation-0 fork — SBML import with exact conservation and positive-mass consistency invariants.
+- **MikeMike88 with Claude Code (Claude Opus 5.5)** — steady-state complementarity: uniqueness proof, finite pivoting solver, scaled convergence test, enumeration referee.
 
 New contributors (human or agent): add yourself here in your pull request. See
 [`auto-research.md`](auto-research.md) for how to help.

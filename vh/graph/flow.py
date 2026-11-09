@@ -41,12 +41,12 @@ physiology.
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 from typing import Sequence
 
 import numpy as np
 from scipy.linalg import expm
-from scipy.optimize import least_squares, root
 from scipy.special import jv
 
 from .algorithms import connected_components
@@ -787,72 +787,179 @@ class FlowNetwork:
             res[n:][closed] = q[closed]
         return res
 
-    def _solve_active(self, open_mask: np.ndarray, x0: np.ndarray) -> np.ndarray:
-        sol = root(self._residual_steady, x0, args=(open_mask,), method="hybr", tol=1e-10)
-        x = sol.x
-        if (not sol.success
-                or np.max(np.abs(self._residual_steady(x, open_mask))) > 1e-7):
-            alt = least_squares(self._residual_steady, x0, args=(open_mask,),
-                                xtol=1e-12, ftol=1e-12, gtol=1e-12, max_nfev=20000)
-            if np.max(np.abs(self._residual_steady(alt.x, open_mask))) < np.max(
-                    np.abs(self._residual_steady(x, open_mask))):
-                x = alt.x
-        return x
+    # -- scaling ------------------------------------------------------------
+    def _scales(self, p: np.ndarray | None = None, q: np.ndarray | None = None) -> tuple[float, float]:
+        """Characteristic pressure (Pa) and flow (m^3/s) of the problem.
 
-    def steady_state(self, initial: np.ndarray | None = None) -> FlowSolution:
+        Node rows of the residual are flows (m^3/s) and edge rows are pressures
+        (Pa); in physiological units they differ by ~9 orders of magnitude, so
+        every tolerance is applied to residuals divided by these scales.  When a
+        solution (p, q) is given, its own magnitude is included, so the scales
+        never fall below the size of the answer.
+        """
+        p_s = max(float(np.max(np.abs(self.p_fixed[self.is_reservoir]), initial=0.0)),
+                  float(np.max(np.abs(self.h), initial=0.0)),
+                  float(np.max(np.abs(self.external_pressure), initial=0.0)))
+        if p is not None:
+            p_s = max(p_s, float(np.max(np.abs(p), initial=0.0)))
+        r_s = float(np.median(self.R)) if self.m else 1.0
+        q_s = max(float(np.max(np.abs(self.source), initial=0.0)), p_s / r_s)
+        if q is not None:
+            q_s = max(q_s, float(np.max(np.abs(q), initial=0.0)))
+        p_s = max(p_s, q_s * r_s, 1e-300)
+        return p_s, max(q_s, 1e-300)
+
+    def _scaled_residual(self, x: np.ndarray, open_mask: np.ndarray,
+                         p_s: float, q_s: float) -> np.ndarray:
+        n = self.n
+        res = self._residual_steady(x, open_mask)
+        out = np.empty_like(res)
+        out[:n] = np.where(self.is_reservoir, res[:n] / p_s, res[:n] / q_s)
+        closed = (self.valve | self.collapsible) & ~open_mask
+        out[n:] = np.where(closed, res[n:] / q_s, res[n:] / p_s)
+        return out
+
+    def _steady_jacobian(self, x: np.ndarray, open_mask: np.ndarray) -> np.ndarray:
+        """Analytic Jacobian of :meth:`_residual_steady` for a fixed open/closed pattern."""
+        n, m = self.n, self.m
+        p, q = x[:n], x[n:]
+        J = np.zeros((n + m, n + m))
+        for i in range(n):
+            if self.is_reservoir[i]:
+                J[i, i] = 1.0
+            else:
+                J[i, n:] = self.B[i]
+        d_drop = self._edge_drop_derivative(q)
+        closed = (self.valve | self.collapsible) & ~open_mask
+        for e in range(m):
+            row = n + e
+            if closed[e]:
+                J[row, n + e] = 1.0
+                continue
+            J[row, self.src[e]] += 1.0
+            # a collapsed tube (downstream below external) does not feel p_dst
+            if not (self.collapsible[e] and p[self.dst[e]] < self.external_pressure[e]):
+                J[row, self.dst[e]] -= 1.0
+            J[row, n + e] = -d_drop[e]
+        return J
+
+    def _solve_active(self, open_mask: np.ndarray, x0: np.ndarray,
+                      tol: float = 1e-13, max_iter: int = 60) -> tuple[np.ndarray, bool]:
+        """Solve the equations of one open/closed pattern by damped Newton.
+
+        Works on the scaled residual, so the stopping test means the same thing
+        for pressures and flows.  For a linear network the first full step is
+        exact.  Returns (x, success).
+        """
+        x = np.asarray(x0, dtype=float).copy()
+        p_s, q_s = self._scales(x[:self.n], x[self.n:])
+        row_scale = np.r_[np.where(self.is_reservoir, p_s, q_s),
+                          np.where((self.valve | self.collapsible) & ~open_mask, q_s, p_s)]
+        col_scale = np.r_[np.full(self.n, p_s), np.full(self.m, q_s)]
+        r = self._scaled_residual(x, open_mask, p_s, q_s)
+        norm = float(np.max(np.abs(r), initial=0.0))
+        for _ in range(max_iter):
+            if norm < tol:
+                return x, True
+            J = self._steady_jacobian(x, open_mask) * col_scale[None, :] / row_scale[:, None]
+            try:
+                dy = np.linalg.solve(J, -r)
+            except np.linalg.LinAlgError:
+                dy, *_ = np.linalg.lstsq(J, -r, rcond=None)
+            dx = dy * col_scale
+            step = 1.0
+            for _ in range(30):
+                trial = x + step * dx
+                r_trial = self._scaled_residual(trial, open_mask, p_s, q_s)
+                n_trial = float(np.max(np.abs(r_trial), initial=0.0))
+                if n_trial < norm or n_trial < tol:
+                    break
+                step *= 0.5
+            else:
+                return x, False
+            x, r, norm = trial, r_trial, n_trial
+        return x, norm < tol
+
+    def _one_way_violations(self, x: np.ndarray, open_mask: np.ndarray,
+                            p_s: float, q_s: float, tol: float) -> np.ndarray:
+        """Indices of one-way edges whose open/closed state contradicts the solution.
+
+        Open edge: must carry q >= 0.  Closed edge: its driving pressure
+        p_src - p_dst(effective) - h must be <= 0 (otherwise it would open).
+        """
+        p, q = x[:self.n], x[self.n:]
+        one_way = self.valve | self.collapsible
+        drive = p[self.src] - self._effective_downstream(p) - self.h
+        bad_open = one_way & open_mask & (q < -tol * q_s)
+        bad_closed = one_way & ~open_mask & (drive > tol * p_s)
+        return np.nonzero(bad_open | bad_closed)[0]
+
+    def steady_state(self, initial: np.ndarray | None = None,
+                     tol: float = 1e-10) -> FlowSolution:
         """Solve the steady state.
 
         Linear R networks are solved exactly by a square linear system.
-        Networks with kinetic terms or minor losses use a nonlinear root
-        finder.  Collapsible veins and valves add a complementarity condition
-        (flow is one-way, and a closed tube carries no flow); those are solved
-        by an active-set loop: open edges obey the pressure-flow law, closed
-        edges carry q = 0, and an edge is opened/closed when the sign of its
-        driving pressure or flow changes.
+        Networks with kinetic terms or minor losses use Newton's method on the
+        scaled residual.  Collapsible veins and valves add a complementarity
+        condition (flow is one-way, and a closed tube carries no flow):
+
+            q_e >= 0,   blocking pressure w_e >= 0,   q_e * w_e = 0.
+
+        It is solved by single principal pivots with Murty's least-index rule:
+        solve the equations of the current open/closed pattern, then flip only
+        the lowest-index edge whose state contradicts the solution.  For linear
+        edges with valves this is a P-matrix linear complementarity problem
+        (the minimum-content program is strictly convex), for which the rule is
+        finite and the solution is unique (Murty 1974).
+
+        ``converged`` is True only if the scaled residual is below ``tol`` *and*
+        every one-way edge satisfies complementarity; ``residual_norm`` is the
+        largest scaled (dimensionless) residual.  Node/edge residuals are in
+        physical units (m^3/s and Pa; m^3/s for the q=0 row of a closed edge).
         """
         one_way = self.valve | self.collapsible
+        open_mask = np.ones(self.m, dtype=bool)
+        pivots_ok = True
         if not np.any(one_way) and self._is_linear():
             p, q = self._linear_steady()
-            open_mask = np.ones(self.m, dtype=bool)
             method = "linear"
         else:
             if initial is None:
                 p0, q0 = self._linear_steady()
-                x0 = np.r_[p0, q0]
+                x = np.r_[p0, q0]
             else:
-                x0 = np.asarray(initial, dtype=float)
-            open_mask = np.ones(self.m, dtype=bool)
+                x = np.asarray(initial, dtype=float)
             method = "nonlinear" if not np.any(one_way) else "active-set"
-            for _ in range(20):
-                x = self._solve_active(open_mask, x0)
-                p, q = x[:self.n], x[self.n:]
-                changed = False
-                for e in np.nonzero(one_way)[0]:
-                    if open_mask[e] and q[e] < -1e-12:
-                        open_mask[e] = False
-                        changed = True
-                    elif not open_mask[e]:
-                        p_dst = (max(p[self.dst[e]], self.external_pressure[e])
-                                 if self.collapsible[e] else p[self.dst[e]])
-                        if p[self.src[e]] - p_dst - self.h[e] > 1e-9:
-                            open_mask[e] = True
-                            changed = True
-                x0 = x
-                if not changed:
+            n_one_way = int(np.count_nonzero(one_way))
+            max_pivots = 50 + 10 * n_one_way
+            for _ in range(max_pivots + 1):
+                x, _ok = self._solve_active(open_mask, x)
+                p_s, q_s = self._scales(x[:self.n], x[self.n:])
+                bad = self._one_way_violations(x, open_mask, p_s, q_s, tol)
+                if bad.size == 0:
                     break
-        # A closed one-way edge has q=0 by construction; clamp against tiny
-        # numerical negatives before reporting.
+                open_mask[bad[0]] = ~open_mask[bad[0]]      # Murty: least index only
+            else:
+                pivots_ok = False
+            p, q = x[:self.n], x[self.n:]
+        x = np.r_[p, q]
+        p_s, q_s = self._scales(p, q)
+        res = self._residual_steady(x, open_mask)
+        res_scaled = self._scaled_residual(x, open_mask, p_s, q_s)
+        norm = float(np.max(np.abs(res_scaled), initial=0.0))
+        compl_ok = self._one_way_violations(x, open_mask, p_s, q_s, tol).size == 0
+        # Closed edges carry q = 0 exactly (a linear row); open one-way edges may
+        # carry a negative q only within tolerance, which is clamped for reporting.
         q_out = q.copy()
         if np.any(one_way):
             q_out[one_way] = np.maximum(q_out[one_way], 0.0)
-        res = self._residual_steady(np.r_[p, q], open_mask)
         return FlowSolution(
             pressure={nid: float(p[i]) for i, nid in enumerate(self.node_ids)},
             flow={eid: float(q_out[i]) for i, eid in enumerate(self.edge_ids)},
             node_residual={nid: float(res[i]) for i, nid in enumerate(self.node_ids)},
             edge_residual={eid: float(res[self.n + i]) for i, eid in enumerate(self.edge_ids)},
-            converged=bool(np.max(np.abs(res)) < 1e-6),
-            residual_norm=float(np.max(np.abs(res))),
+            converged=bool(norm < tol and compl_ok and pivots_ok),
+            residual_norm=norm,
             method=method,
         )
 
@@ -896,13 +1003,17 @@ class FlowNetwork:
         return x[:n], x[n:]
 
     def _nonlinear_step(self, dt: float, p_old: np.ndarray, q_old: np.ndarray,
-                        tol: float = 1e-10, max_iter: int = 30):
+                        tol: float = 1e-12, max_iter: int = 30):
         if np.any(self.collapsible) or np.any(self.valve):
             raise NotImplementedError(
                 "transient collapse/valve edges are not implemented; use the "
                 "steady-state solver for Starling-resistor / valve problems"
             )
         n, m = self.n, self.m
+        # node rows are flows (m^3/s), edge rows pressures (Pa): test them relative
+        # to their own scales, not against one absolute number
+        p_s, q_s = self._scales(p_old, q_old)
+        row_scale = np.r_[np.where(self.is_reservoir, p_s, q_s), np.full(m, p_s)]
 
         def residual(x):
             p, q = x[:n], x[n:]
@@ -911,7 +1022,7 @@ class FlowNetwork:
                                self.C * (p - p_old) / dt - self.B @ q - self.source)
             res[n:] = (self.L * (q - q_old) / dt + self.B.T @ p + self.h
                        + self._edge_drop(q))
-            return res
+            return res / row_scale
 
         x = np.r_[p_old, q_old]
         for _ in range(max_iter):
@@ -930,7 +1041,7 @@ class FlowNetwork:
                 J[row, :n] = self.B[:, e]
                 J[row, n + e] = self.L[e] / dt + self._edge_drop_derivative(x[n:])[e]
             try:
-                dx = np.linalg.solve(J, -r)
+                dx = np.linalg.solve(J / row_scale[:, None], -r)   # r is row-scaled
             except np.linalg.LinAlgError:
                 break
             # mild damping keeps the Newton step physical for large dt
@@ -943,6 +1054,11 @@ class FlowNetwork:
                 step *= 0.5
             else:
                 x = x + 0.1 * dx
+        final = float(np.max(np.abs(residual(x))))
+        if final >= tol:
+            warnings.warn(f"implicit Euler Newton step did not converge "
+                          f"(scaled residual {final:.1e} after {max_iter} iterations)",
+                          RuntimeWarning, stacklevel=3)
         return x[:n], x[n:]
 
     def simulate(self, t_end_s: float, dt_s: float, p0=None, q0=None,

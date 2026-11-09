@@ -68,8 +68,26 @@ class DerivedParams:
         return self.cl_hep_blood_l_h * self.bp + self.cl_renal_l_h
 
     @property
-    def half_life_h(self):
+    def effective_half_life_h(self):
+        """ln2 * Vss / CL = ln2 * mean residence time.
+
+        This equals the elimination half-life only for a one-compartment
+        model. For this multi-compartment model the terminal half-life --
+        the one a clinical terminal slope measures -- is longer and is set
+        by the slowest eigenvalue of the system matrix; see
+        PBPKModel.terminal_half_life_h().
+        """
         return np.log(2) * self.vss_l / self.cl_total_plasma_l_h
+
+    @property
+    def half_life_h(self):
+        """Backward-compatible alias for effective_half_life_h (ln2*Vss/CL).
+
+        Not the model's terminal half-life; prefer effective_half_life_h
+        for this quantity and PBPKModel.terminal_half_life_h() for the
+        terminal slope.
+        """
+        return self.effective_half_life_h
 
 
 class PBPKModel:
@@ -248,12 +266,31 @@ class PBPKModel:
     def mass_balance(self, x) -> float:
         return float(np.sum(x))
 
+    # Absorbing accumulator states: drug only flows in, so they carry the
+    # matrix's zero eigenvalues and must be excluded from decay analysis.
+    SINKS = ("elim_hepatic", "elim_renal", "elim_gut_wall", "feces")
+
+    def terminal_half_life_h(self) -> float:
+        """Half-life of the model's slowest decay mode, ln2 / -max Re(eig).
+
+        Computed from the eigenvalues of M restricted to the non-sink
+        states. This is the half-life of the terminal log-linear phase of
+        the plasma curve -- the quantity clinical terminal half-lives
+        measure. Returns inf if the non-sink system has no decaying mode
+        (e.g. all clearances zero).
+        """
+        keep = [i for i, n in enumerate(self.names) if n not in self.SINKS]
+        lam = np.linalg.eigvals(self.M[np.ix_(keep, keep)])
+        slowest = float(np.max(lam.real))
+        return float(np.log(2) / -slowest) if slowest < 0 else float("inf")
+
     def summary(self) -> str:
         p = self.p
         return (f"{self.compound.name} in {self.ind.label}: Vss {p.vss_l:.0f} L ({p.vss_l / self.ind.body_mass:.2f} L/kg), "
                 f"B:P {p.bp:.2f}, fu {p.fu:.3f}, CLint,hep {p.clint_hep_l_h:.0f} L/h -> CL_plasma "
                 f"{p.cl_total_plasma_l_h:.1f} L/h (hepatic blood {p.cl_hep_blood_l_h:.1f}, renal {p.cl_renal_l_h:.2f}), "
-                f"t1/2 ~{p.half_life_h:.1f} h | oral: ka {p.ka_h:.2f}/h, Fa {p.fa:.2f}, Fg {p.fg:.2f}, "
+                f"t1/2,terminal ~{self.terminal_half_life_h():.1f} h (effective ln2*Vss/CL ~{p.effective_half_life_h:.1f} h) | "
+                f"oral: ka {p.ka_h:.2f}/h, Fa {p.fa:.2f}, Fg {p.fg:.2f}, "
                 f"Fh {1 - p.cl_hep_blood_l_h / self.ind.liver_flow_total:.2f}")
 
 
