@@ -207,6 +207,31 @@ validated, wearing the heart's flows.
   an extraction ratio of 0.284, just below the published 0.30–0.50 band; the
   one-factor middle-out calibration gives 0.309. Both are reported.
 
+## What changed when we fixed the solver
+
+The original solver used the first half of the pulse over the entire cycle. The
+charts below use the actual inputs from both implementations. Dashed lines in
+the first chart show each cycle average.
+
+![Actual pulmonary and hepatic artery flow inputs before and after the fix](img/circulation_verified_flow.png)
+
+The next chart compares the originally reported exposure change with the
+corrected experiment. Its right panel magnifies the differences across three
+transport step sizes.
+
+![Original versus corrected exposure, with a step size comparison](img/circulation_verified_auc.png)
+
+The infusion chart shows a 1 mg dose scheduled from 60 to 120 seconds. Dots
+are measured at the same observation times. The original implementation
+delivers 0.90 mg and the corrected solver delivers 1.00 mg.
+
+![Scheduled and delivered mass for an off-grid infusion](img/circulation_verified_infusion.png)
+
+Regenerate these three figures with `python scripts/plot_circulation_verification.py
+--before /path/to/original-checkout`. The original checkout for these figures
+is `b6e12d6`. Run `scripts/validate_circulation.py` first to refresh the
+step-size results for the corrected solver.
+
 ## Try it
 
 ```bash
