@@ -35,3 +35,11 @@ include = ["vh*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+filterwarnings = [
+    # scipy's expm (scaling-and-squaring in _matfuncs) raises spurious
+    # divide/overflow/invalid matmul RuntimeWarnings on this platform even for
+    # valid input matrices (they fire inside plain pbpk.simulate as well);
+    # results are unaffected. Scoped to the two scipy frames that emit them.
+    'ignore::RuntimeWarning:scipy.linalg._matfuncs',
+    'ignore::RuntimeWarning:numpy.linalg._linalg',
+]
