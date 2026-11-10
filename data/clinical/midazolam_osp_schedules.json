@@ -1,0 +1,120 @@
+{
+  "source": "https://github.com/Open-Systems-Pharmacology/Midazolam-Model/blob/cc916b5/Midazolam-Model.json",
+  "method": "Link exact ObservedData names from Simulations. Extract Infusion time from linked simulation or bolus label, and ordered dose events from linked multi-schema Protocols. Single dose amounts retain the observational dataset dose.",
+  "datasets": {
+    "Hohmann 2015 - iv 0.001 mg - Midazolam - IV - 0.001 mg - Plasma - agg. (n=16)": {
+      "protocol": "iv 0.001 mg (5 min)",
+      "iv_duration_h": 0.08333333333333333
+    },
+    "Olkkola 1993 - iv Control (Perpetrator Placebo) - Midazolam - IV - 0.05 mg/kg - Plasma - agg. (n=6)": {
+      "protocol": "iv 0.05 mg/kg (2 min)",
+      "iv_duration_h": 0.03333333333333333
+    },
+    "Saari 2006 - iv Control (Perpetrator Placebo) - Midazolam - IV - 0.05 mg/kg - Plasma - agg. (n=10)": {
+      "protocol": "iv 0.05 mg/kg (2 min)",
+      "iv_duration_h": 0.03333333333333333
+    },
+    "Olkkola 1996 - day 4 (iv) Control (Perpetrator Placebo) - Midazolam - IV - 0.05 mg/kg - Plasma - agg. (n=12)": {
+      "protocol": "iv 0.05 mg/kg (2 min)",
+      "iv_duration_h": 0.03333333333333333
+    },
+    "Szalat 2007 - Control (Perpetrator Placebo) - Midazolam - IV - 0.05 mg/kg - Plasma - agg. (n=3)": {
+      "protocol": "iv 0.05 mg/kg (bolus)",
+      "iv_duration_h": 0.0
+    },
+    "Allonen 1981 - iv - Midazolam - IV - 0.075 mg/kg - Plasma - agg. (n=6)": {
+      "protocol": "iv 0.075 mg/kg (1 min)",
+      "iv_duration_h": 0.016666666666666666
+    },
+    "Swart 2002 - day 5 Control (Perpetrator Placebo) - Midazolam - IV - 0.075 mg/kg - Plasma - agg. (n=8)": {
+      "protocol": "iv 0.075 mg/kg (1 min)",
+      "iv_duration_h": 0.016666666666666666
+    },
+    "Hohmann 2015 - iv 1 mg - Midazolam - IV - 1 mg - Plasma - agg. (n=16)": {
+      "protocol": "iv 1 mg (5 min)",
+      "iv_duration_h": 0.08333333333333333
+    },
+    "Kharasch 2004 - iv Control (Perpetrator Placebo) - Midazolam - IV - 1 mg - Plasma - agg. (n=10)": {
+      "protocol": "iv 1 mg (bolus)",
+      "iv_duration_h": 0.0
+    },
+    "Phimmasone 2001 - Control (Perpetrator Placebo) - Midazolam - IV - 1 mg - Plasma - agg. (n=6)": {
+      "protocol": "iv 1 mg (bolus)",
+      "iv_duration_h": 0.0
+    },
+    "Kharasch 1997 - Control (Perpetrator Placebo) - Midazolam - IV - 1 mg - Plasma - typical (n=9)": {
+      "protocol": "iv 1 mg (bolus)",
+      "iv_duration_h": 0.0
+    },
+    "Kharasch 2011 - iv Control (Perpetrator Placebo) - Midazolam - IV - 1 mg - Plasma - agg. (n=12)": {
+      "protocol": "iv 1 mg (bolus)",
+      "iv_duration_h": 0.0
+    },
+    "Shin 2013 - Control phase (Midazolam alone) - Midazolam - IV - 1 mg - Plasma - agg. (n=24)": {
+      "protocol": "iv 1 mg (bolus)",
+      "iv_duration_h": 0.0
+    },
+    "Shin 2016 - Midazolam alone - Midazolam - IV - 1 mg - Plasma - agg. (n=12)": {
+      "protocol": "iv 1 mg (bolus)",
+      "iv_duration_h": 0.0
+    },
+    "Majumdar 2007 - po Control (Perpetrator Placebo) - Midazolam - IV - 2 mg - Plasma - agg. (n=12)": {
+      "protocol": "iv 2 mg (2 min)",
+      "iv_duration_h": 0.03333333333333333
+    },
+    "Link 2008 - iv Control (Perpetrator Placebo) - Midazolam - IV - 2 mg - Plasma - agg. (n=8)": {
+      "protocol": "iv 2 mg (bolus)",
+      "iv_duration_h": 0.0
+    },
+    "Darwish 2008 - iv - Midazolam - IV - 2 mg - Plasma - agg. (n=24)": {
+      "protocol": "iv 2 mg (bolus)",
+      "iv_duration_h": 0.0
+    },
+    "Schwagmeier 1998 - iv administration - Midazolam - IV - 5 mg - Plasma - agg. (n=8)": {
+      "protocol": "iv 5 mg (30 sec)",
+      "iv_duration_h": 0.008333333333333333
+    },
+    "Smith 1981 - iv 5 mg - Midazolam - IV - 5 mg - Plasma - agg. (n=6)": {
+      "protocol": "iv 5 mg (bolus)",
+      "iv_duration_h": 0.0
+    },
+    "Mikus 2017 - Midazolam control PO - Midazolam - PO - 4 mg - Plasma - agg. (n=12)": {
+      "protocol": "Mikus 2017",
+      "doses": [
+        {
+          "route": "oral",
+          "time_h": 0.0,
+          "amount_mg": 4.0,
+          "duration_h": 0.0
+        },
+        {
+          "route": "iv",
+          "time_h": 6.0,
+          "amount_mg": 2.0,
+          "duration_h": 0.5
+        }
+      ]
+    },
+    "Mikus 2017 - Midazolam control IV - Midazolam - IV - 2 mg - Plasma - agg. (n=12)": {
+      "protocol": "Mikus 2017",
+      "doses": [
+        {
+          "route": "oral",
+          "time_h": 0.0,
+          "amount_mg": 4.0,
+          "duration_h": 0.0
+        },
+        {
+          "route": "iv",
+          "time_h": 6.0,
+          "amount_mg": 2.0,
+          "duration_h": 0.5
+        }
+      ]
+    },
+    "Yu 2004 - Control CYP3A5*3/*3 - Midazolam - IV - 1 mg - Plasma - agg. (n=7)": {
+      "protocol": "iv 1 mg (2 min)",
+      "iv_duration_h": 0.03333333333333333
+    }
+  }
+}

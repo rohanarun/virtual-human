@@ -15,6 +15,15 @@
   `docs/img/flow_explained_venous_pressure.png`,
   `docs/img/flow_explained_terms.png`,
   `docs/img/flow_explained_scorecard.png`.
+- **Addendum code** (beating heart + drug transport, same branch):
+  `vh/graph/circulation.py`, `vh/graph/uptake.py`,
+  `tests/test_circulation.py`, `scripts/validate_circulation.py`,
+  `docs/circulation.md`, `docs/validation_circulation.{md,json}`,
+  `docs/img/circulation_wiggers.png`, `docs/img/circulation_sweeps.png`,
+  `docs/img/circulation_beat_flows.png`, `docs/img/uptake_overlay.png`.
+- **Explainer** (plain-language charts): `docs/circulation_explained.md`,
+  `scripts/plot_circulation_explainer.py`,
+  `docs/img/circulation_explained_{loop,beat,starling,drug,scorecard}.png`.
 
 ## Question
 
@@ -131,7 +140,7 @@ conduit labels/styles to the renderer).
 pip install -e ".[dev]"                 # numpy, scipy, ...
 python scripts/validate_flow.py          # writes validation_flow.json + 3 figures
 pytest -q tests/test_flow.py             # 24 tests against exact authorities
-pytest -q                                # full suite: 41 passed, 6 skipped
+pytest -q                                # full suite: 68 passed, 6 skipped
 ```
 
 The validation report is `docs/validation_flow.json`; the derivation is
@@ -151,3 +160,128 @@ The validation report is `docs/validation_flow.json`; the derivation is
   (venous pressure in the standing and recumbent positions).
 - Pedley, T. J. (1980). *The Fluid Mechanics of Large Blood Vessels*.
   Cambridge University Press.
+
+---
+
+# Addendum (2026-11-10): the beating heart, and the drug on its flow
+
+## Question
+
+The flow graph so far answered steady questions: what pressure does a given
+network produce, where does a flow go. The next question is dynamical and
+coupled: **can the same conserved-flow graph carry a beating four-chamber heart
+and the closed circulation, and can the drug mass balance of the validated PBPK
+engine ride the flows that heart actually produces?** Concretely: does a
+circulation assembled entirely from published components predict the normal
+cardiac output, pressures and volumes without fitting any output — and how much
+of a 24 h plasma profile is changed by the *pulse*, as opposed to the
+cycle-mean flow?
+
+## Method
+
+- **Heart.** Four chambers with time-varying elastance
+  `p_i = E_i(t)(V_i − V0_i)`, `E_i` a double-Hill activation (Suga & Sagawa;
+  Stergiopulos). Emax/Emin/V0 and chamber volumes are the published normal
+  values (Broomé et al. 2013, Table 1); nothing is fitted to the outputs.
+  Parameters: LV 2.8/0.06/15, RV 0.55/0.04/10, LA 0.30/0.07/5, RA 0.22/0.05/8;
+  HR 70.
+- **Valves.** Four one-way Bernoulli orifices
+  `q = A_eff √(2 max(Δp,0)·133.32/ρ)`, exactly zero reversed; published normal
+  areas 5/3.5/6/3.5 cm², Cd 0.90.
+- **Pools and beds.** Four elastic pools (systemic arteries 1.6, systemic veins
+  70, pulmonary arteries 6, pulmonary veins 12 mL/mmHg) and the twelve ICRP-89
+  organ beds, each `R_t = (MAP_ref − RAP_ref)/(share_t · CO_ref)` with
+  MAP_ref 87, RAP_ref 4.5 mmHg, CO_ref 5 L/min, blood 5.3 L. Venous return is a
+  Starling waterfall; the pulmonary bed is bidirectional.
+- **Solver.** One closed graph, node balance `dV/dt = Σq_in − Σq_out`, RK4.
+  `ΣV` is a linear invariant, so conservation and equal ventricular stroke
+  volumes are identities, not tuning targets.
+- **Drug layer.** `vh.graph.uptake` keeps the validated PBPK state, volumes,
+  partition coefficients, clearance and oral absorption exactly; only the flows
+  change. Each segment's transport matrix is exponentiated exactly on a 4 ms
+  grid, and full beats regroup into a matrix power of the beat propagator.
+  At ICRP reference flows the
+  transport matrix is identical to the PBPK engine's, which anchors the layer.
+
+## Circulation and uptake validation
+
+The [generated validation report](../../docs/validation_circulation.md) records
+baseline outputs, comparisons with Broomé et al. Table 1, physiological sweeps,
+conservation and PBPK checks, and the Olkkola clinical overlays. Arterial
+pressures are compared with the published reference values because Table 1 does
+not provide SDs for them.
+
+The original uptake comparison sampled the first half of the beat and applied
+it across the full period, raising average flow. The corrected comparison
+uses the full cycle and sets each steady flow to the mean of the actual
+pulsatile inputs. The solver integrates plasma AUC within each transport
+segment. For the reference 24-hour IV plus oral midazolam scenario, the
+matched comparison gives a change of about **−0.005%**, stable at 4, 2 and 1 ms
+transport steps. The clinical overlays compare concentrations to the existing
+ICRP mean-flow engine and observed data. Those comparisons include differences
+in mean flow.
+
+The regression checks use an asymmetric waveform, compare dose delivery to the
+integrated infusion schedule at off-grid times, and verify the liver uptake
+diagnostic against the hepatic mass balance.
+
+## Limits
+
+- **Open-loop circulation.** No baroreflex, chemoreflex, venoconstriction,
+  pericardial or intrathoracic pressure. Normal resting circulation only.
+- **Ideal valves and blood.** Bernoulli orifices, no leaflets or regurgitation;
+  Newtonian blood; lumped compliances, no distributed waves.
+- **Constant PBPK volumes in the drug layer.** Only flows are modulated; the
+  circulating pool *volume* waves live in the hydraulic layer. This isolates the
+  flow-waveform effect and is a documented next coupling step.
+- **Oral absorption is not flow-coupled.** The validated stomach/intestine chain
+  is retained; villous blood flow is not pulsed.
+- **Dose and observation times split segments.** The flow is held constant within
+  each segment.
+- **Hepatic extraction.** Bottom-up in-vitro CLint gives E_h 0.284, just below
+  the published 0.30–0.50 band; the one-factor middle-out calibration gives
+  0.309. Both are reported.
+- **The waveform effect has no independent referee.** Its convergence and its
+  anchoring to identical mean flows are what is checked; its magnitude is not
+  externally validated.
+- **Tissue concentration swings within a beat are not reported as an
+  observable.** In the first seconds after a bolus, far-from-equilibrium
+  compartments are still loading. The report shows plasma variation during the
+  third beat after an IV bolus.
+
+## Reproduce
+
+```bash
+python scripts/validate_circulation.py   # writes validation_circulation.{json,md} + 4 figures
+pytest -q tests/test_circulation.py
+pytest -q
+```
+
+Reports: `docs/circulation.md` (model, equations, limits),
+`docs/validation_circulation.md` / `.json` (measured numbers). Figures:
+`docs/img/circulation_wiggers.png`, `circulation_sweeps.png`,
+`circulation_beat_flows.png`, `uptake_overlay.png`. A plain-language version
+with its own five charts is `docs/circulation_explained.md`; regenerate it with
+`python scripts/plot_circulation_explainer.py`.
+
+## Sources (addendum)
+
+- Suga, H., & Sagawa, K. (1974). Instantaneous pressure–volume relationships
+  and their ratio in the excised, supported canine left ventricle.
+  *Circulation Research* 35(1), 117–126.
+- Stergiopulos, N., Meister, J. J., & Westerhof, N. (1996). Determinants of
+  stroke volume and ejection fraction: a closed-loop analysis. *American
+  Journal of Physiology* 270(1), H205–H212.
+- Broomé, M., Maksuti, E., Bjällmark, A., Frenckner, B., & Janerot-Sjöberg, B.
+  (2013). Closed-loop real-time simulation model of hemodynamics and oxygen
+  transport. *BioMedical Engineering OnLine* 12:69, Table 1.
+- International Commission on Radiological Protection (2002). *Basic
+  Anatomical and Physiological Data for Use in Radiological Protection:
+  Reference Values*. ICRP Publication 89. Ann. ICRP 32(3–4).
+- Olkkola, K. T., Aranko, K., Luurila, H., Hiller, A., Saarnivaara, L., Himberg,
+  J. J., & Neuvonen, P. J. (1993). A potentially hazardous interaction between
+  erythromycin and midazolam. *Clinical Pharmacology & Therapeutics* 53(3),
+  298–305.
+- Thummel, K. E., et al. (1996). Human liver midazolam 1′-hydroxylation:
+  in vitro–in vivo scaling. *Drug Metabolism and Disposition* 24(9),
+  1000–1008.

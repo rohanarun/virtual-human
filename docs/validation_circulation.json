@@ -1,0 +1,535 @@
+{
+ "structure": {
+  "authority": "exact identities of the model's own equations + ICRP volume/shares",
+  "entries": [
+   {
+    "check": "total blood volume drift over 8 recorded beats",
+    "authority": "linear invariant: d(sum V)/dt = 0 by the node balance",
+    "measured": "1.64e-11 mL",
+    "error": 1.6370904631912708e-11,
+    "status": "pass"
+   },
+   {
+    "check": "graph blood volume == the individual's ICRP volume (5.3 L)",
+    "authority": "ICRP 89 referenceMale blood volume",
+    "measured": "6.1e-11 mL",
+    "error": 6.093614501878619e-11,
+    "status": "pass"
+   },
+   {
+    "check": "LV and RV eject identically (one closed loop)",
+    "authority": "conservation at the pools: in-flow == out-flow",
+    "measured": "relerr 6.5e-05",
+    "error": 6.523980072309093e-05,
+    "status": "pass"
+   },
+   {
+    "check": "valves carry exactly zero backflow",
+    "authority": "one-way orifice law: q = A eff sqrt(2 dp rho), dp>0 only",
+    "measured": "min over beat: 0.00e+00 mL/s",
+    "error": 0.0,
+    "status": "pass"
+   },
+   {
+    "check": "declarative graph + schema validate clean",
+    "authority": "invariants: closed loop, ICRP shares sum, positive parameters",
+    "measured": "0 violations",
+    "error": 0,
+    "status": "pass"
+   },
+   {
+    "check": "organ-bed shares sum to 100 %",
+    "authority": "ICRP 89 flow split",
+    "measured": "100.00 %",
+    "error": 0.0,
+    "status": "pass"
+   },
+   {
+    "check": "instantaneous bed split == ICRP shares (all beds, any instant)",
+    "authority": "structure: every bed sees the same (p_sa - p_sv) gradient",
+    "measured": "relerr 2.2e-16",
+    "error": 2.220446049250313e-16,
+    "status": "pass"
+   }
+  ]
+ },
+ "baseline": {
+  "authority": "Broom\u00e9 et al. 2013, Biomed Eng Online 12:69, Table 1 (published normal column; NO output quantity was fitted)",
+  "entries": [
+   {
+    "check": "cardiac output (L/min)",
+    "authority": "Broom\u00e9 2013 Table 1 normal: 6.3 +- 2.4",
+    "measured": "6.354 (+0.02 SD)",
+    "error": 0.02261759385776293,
+    "status": "pass"
+   },
+   {
+    "check": "stroke volume (mL)",
+    "authority": "Broom\u00e9 2013 Table 1 normal: 89.0 +- 30.0",
+    "measured": "90.775 (+0.06 SD)",
+    "error": 0.059182012027919485,
+    "status": "pass"
+   },
+   {
+    "check": "ejection fraction (-)",
+    "authority": "Broom\u00e9 2013 Table 1 normal: 0.59 +- 0.04",
+    "measured": "0.634 (+1.10 SD)",
+    "error": 1.100523648227422,
+    "status": "note"
+   },
+   {
+    "check": "LVEDV (mL)",
+    "authority": "Broom\u00e9 2013 Table 1 normal: 123.0 +- 28.0",
+    "measured": "143.174 (+0.72 SD)",
+    "error": 0.7205081930813394,
+    "status": "pass"
+   },
+   {
+    "check": "RVEDV (mL)",
+    "authority": "Broom\u00e9 2013 Table 1 normal: 111.0 +- 22.0",
+    "measured": "138.526 (+1.25 SD)",
+    "error": 1.2511633896033023,
+    "status": "note"
+   },
+   {
+    "check": "mean RAP (mmHg)",
+    "authority": "Broom\u00e9 2013 Table 1 normal: 4.8 +- 2.4",
+    "measured": "3.463 (-0.56 SD)",
+    "error": -0.5571153154285138,
+    "status": "pass"
+   },
+   {
+    "check": "mean LAP (mmHg)",
+    "authority": "Broom\u00e9 2013 Table 1 normal: 8.3 +- 2.5",
+    "measured": "5.907 (-0.96 SD)",
+    "error": -0.9571661572438618,
+    "status": "pass"
+   },
+   {
+    "check": "aortic systolic (mmHg)",
+    "authority": "Broom\u00e9 2013 Table 1 normal: 112 mmHg (SD unavailable)",
+    "measured": 107.343,
+    "error": null,
+    "status": "note"
+   },
+   {
+    "check": "aortic diastolic (mmHg)",
+    "authority": "Broom\u00e9 2013 Table 1 normal: 74 mmHg (SD unavailable)",
+    "measured": 69.681,
+    "error": null,
+    "status": "note"
+   },
+   {
+    "check": "pulm. arterial systolic (mmHg)",
+    "authority": "Broom\u00e9 2013 Table 1 normal: 22 mmHg (SD unavailable)",
+    "measured": 21.57,
+    "error": null,
+    "status": "note"
+   },
+   {
+    "check": "pulm. arterial diastolic (mmHg)",
+    "authority": "Broom\u00e9 2013 Table 1 normal: 9 mmHg (SD unavailable)",
+    "measured": 12.411,
+    "error": null,
+    "status": "note"
+   },
+   {
+    "check": "aortic pulse pressure (mmHg)",
+    "authority": "published normal PP 30-40 mmHg (upper arm)",
+    "measured": 37.66,
+    "error": null,
+    "status": "pass"
+   },
+   {
+    "check": "mean arterial pressure (mmHg)",
+    "authority": "published normal MAP 75-105 mmHg",
+    "measured": 90.46,
+    "error": null,
+    "status": "pass"
+   },
+   {
+    "check": "LV dP/dt max (mmHg/s)",
+    "authority": "published normal 1200-2200 mmHg/s (Guyton; Braunwald)",
+    "measured": 1471,
+    "error": null,
+    "status": "pass"
+   },
+   {
+    "check": "aortic valve open time (s)",
+    "authority": "published systole ~0.3 s at HR 70 (Wiggers)",
+    "measured": 0.296,
+    "error": null,
+    "status": "pass"
+   }
+  ]
+ },
+ "sweeps": {
+  "authority": "direction/shape of published physiological responses (preload/Starling, inotropy, hemorrhage, tachycardia)",
+  "entries": [
+   {
+    "check": "preload +10 % -> CO up (Frank-Starling)",
+    "authority": "published filling-response direction (Guyton; Starling)",
+    "measured": "CO 8.79 vs 6.35 L/min (EDV 193)",
+    "error": null,
+    "status": "pass"
+   },
+   {
+    "check": "preload -10 % -> CO down, EDV down",
+    "authority": "same authority",
+    "measured": "CO 5.10 L/min (EDV 118)",
+    "error": null,
+    "status": "pass"
+   },
+   {
+    "check": "hemorrhage -20 % -> CO collapses, MAP < 40 (shock)",
+    "authority": "published hemorrhage physiology",
+    "measured": "CO 1.20 L/min, MAP 17.0 mmHg",
+    "error": null,
+    "status": "pass"
+   },
+   {
+    "check": "Emax x0.5 -> EF falls, EDV and LAP rise (systolic failure direction)",
+    "authority": "published direction of every systolic-HF intervention",
+    "measured": "EF 49%, EDV 159 mL, LAP 6.4 mmHg",
+    "error": null,
+    "status": "pass"
+   },
+   {
+    "check": "Emax x1.3 -> EF rises, CO rises",
+    "authority": "published contractility response (dose-dependent acute inotropy)",
+    "measured": "EF 68%, CO 6.60 L/min",
+    "error": null,
+    "status": "pass"
+   },
+   {
+    "check": "HR 100 -> SV falls, CO rises modestly (no contractility change)",
+    "authority": "published resting response to tachycardia",
+    "measured": "SV 69.9 vs 90.8 mL, CO 6.99 L/min",
+    "error": null,
+    "status": "pass"
+   }
+  ],
+  "_sweep": [
+   [
+    -25,
+    0.0056525565417342594,
+    -0.03130297901462891,
+    0.005390226088497075,
+    14.980968592650651,
+    -0.07614566269831072
+   ],
+   [
+    -20,
+    1.2033734899501354,
+    16.99350189575514,
+    0.4397304756159604,
+    39.09451541276467,
+    0.9933184463716478
+   ],
+   [
+    -10,
+    3.824089564399202,
+    54.35124963418901,
+    0.5935423697503792,
+    92.04035584344852,
+    3.3534671056677987
+   ],
+   [
+    -5,
+    5.100734790308958,
+    72.55959914536788,
+    0.6184181317327444,
+    117.82908055653036,
+    4.60635694595515
+   ],
+   [
+    0,
+    6.354275384633697,
+    90.461522622777,
+    0.634020263376736,
+    143.17422940737362,
+    5.907084543074643
+   ],
+   [
+    5,
+    7.5845724729225275,
+    108.06513010483887,
+    0.6446324573960969,
+    168.08187996790235,
+    7.249240375146462
+   ],
+   [
+    10,
+    8.79038128739871,
+    125.35627097152482,
+    0.6522697364643949,
+    192.52292190490442,
+    8.626181993168874
+   ]
+  ],
+  "_esweep": [
+   [
+    0.3,
+    0.3705893540666866,
+    172.17735567943083,
+    6.850772231208235,
+    4.466496651830529,
+    65.45879939601453
+   ],
+   [
+    0.5,
+    0.4887826979410936,
+    158.5211218643594,
+    6.400432075538594,
+    5.423766713785733,
+    78.1102635202749
+   ],
+   [
+    0.75,
+    0.5775619666831804,
+    148.9181526552818,
+    6.088962805806128,
+    6.020662278568745,
+    86.04041052544521
+   ],
+   [
+    1.0,
+    0.634020263376736,
+    143.17422940737362,
+    5.907084543074643,
+    6.354275384633697,
+    90.461522622777
+   ],
+   [
+    1.3,
+    0.6791663593389459,
+    138.80792310692394,
+    5.773470324034832,
+    6.599157024875091,
+    93.72011653455577
+   ]
+  ],
+  "_shock": [
+   -20,
+   1.2033734899501354,
+   16.99350189575514,
+   0.4397304756159604,
+   39.09451541276467,
+   0.9933184463716478
+  ]
+ },
+ "drug_identities": {
+  "authority": "mirror identities vs the validated PBPK engine + exact algebraic conservation",
+  "entries": [
+   {
+    "check": "at ICRP flows the transport matrix == validated PBPK matrix",
+    "authority": "mirror of the validated engine (same state, volumes, CL)",
+    "measured": "max abs(M1-M2) = 0.0e+00",
+    "error": 0.0,
+    "status": "pass"
+   },
+   {
+    "check": "pulsatile solver on a FLAT flow template == mean solver",
+    "authority": "two independent code paths over identical constant flows",
+    "measured": "3.7e-11 relative",
+    "error": 3.7491343363171836e-11,
+    "status": "pass"
+   },
+   {
+    "check": "mean-stream solver == PBPK engine (24 h, IV+oral)",
+    "authority": "the validated engine itself",
+    "measured": "1.2e-13 relative",
+    "error": 1.2358838490498276e-13,
+    "status": "pass"
+   },
+   {
+    "check": "24 h pulse-coupled run conserves total drug (IV 5 mg + oral 7.5 mg)",
+    "authority": "zero column sums of every transport matrix",
+    "measured": "1.69e-10 mg",
+    "error": 1.694431261967111e-10,
+    "status": "pass"
+   },
+   {
+    "check": "pulsatile infusion integral exact (10 mg/h x 24 h = 240 mg)",
+    "authority": "affine plateau of the augmented exponential",
+    "measured": "2.1e-11 of delivered",
+    "error": 2.0995353603818028e-11,
+    "status": "pass"
+   },
+   {
+    "check": "steady state balances exactly through the elimination sinks",
+    "authority": "M x = -r x from below: r cancels (linear system)",
+    "measured": "2.13e-14 mg/h",
+    "error": 2.1316282072803006e-14,
+    "status": "pass"
+   },
+   {
+    "check": "matrix SS == engine's 96 h infusion plateau",
+    "authority": "long-run of the validated engine",
+    "measured": "SS 0.5847 vs engine 0.5847 (\"1 --\" 2.5e-07)",
+    "error": 2.541876103057729e-07,
+    "status": "pass"
+   },
+   {
+    "check": "plasma C_ss vs scalar R/CL_total",
+    "authority": "the engine's CL aggregate convention (7.8e-5 low; documented)",
+    "measured": "0.5847 vs 0.5846 (7.8e-05 low)",
+    "error": 7.809258816465425e-05,
+    "status": "pass"
+   },
+   {
+    "check": "piecewise-constant transport discretization converged at dt = 4 ms",
+    "authority": "numerical self-consistency: dt/2 and dt/4 give the same orbit",
+    "measured": "dt 2 ms: 5.4e-07; dt 1 ms: 1.1e-05 relative",
+    "error": 1.1190081123935158e-05,
+    "status": "pass"
+   }
+  ]
+ },
+ "extraction": {
+  "authority": "published hepatic extraction of midazolam (Thummel et al.)",
+  "entries": [
+   {
+    "check": "hepatic extraction ratio E_h (bottom-up)",
+    "authority": "published band 0.30-0.50 (Thummel et al. 0.44)",
+    "measured": 0.284,
+    "error": "CLb/Qh identity: 0.284",
+    "status": "note"
+   },
+   {
+    "check": "E_h with the one-factor middle-out CLint (fitted on IV data by validate_body)",
+    "authority": "published band 0.30-0.50 (Thummel 0.44)",
+    "measured": 0.309,
+    "error": "clint_scale 1.127",
+    "status": "pass"
+   }
+  ]
+ },
+ "waveform_effect": {
+  "authority": "NO external authority: the quantified sensitivity of organ uptake to real flow waves (documented approximation: PBPK pool volumes held constant, only the flows modulate). AUC is integrated within each transport segment.",
+  "auc_mg_h_l": {
+   "pulsatile": 0.4392744787096329,
+   "matched_mean": 0.4392982273449453,
+   "icrp_mean": 0.4376634324754618
+  },
+  "matched_mean_flows_l_h": {
+   "heart": 15.249032527215114,
+   "brain": 45.74709758164534,
+   "muscle": 64.80838824066424,
+   "adipose": 19.061290659018898,
+   "skin": 19.061290659018898,
+   "bone": 19.061290659018898,
+   "kidney": 72.43290450427179,
+   "gut": 57.18387197705669,
+   "spleen": 11.436774395411335,
+   "pancreas": 3.8122581318037785,
+   "rest": 28.591935988528345,
+   "liver": 24.77967785672456,
+   "lung": 381.2287875901681
+  },
+  "relative_effect_by_step": {
+   "4 ms": -5.4060394133470524e-05,
+   "2 ms": -5.4051536956922774e-05,
+   "1 ms": -5.4044861185542636e-05
+  },
+  "entries": [
+   {
+    "check": "AUC 0-24 h, pulsatile vs mean (SAME heart-mean flows: pure waveform effect)",
+    "authority": "steady flows equal the means of the actual sampled transport inputs",
+    "measured": "-0.0054%",
+    "error": -5.4060394133470524e-05,
+    "status": "pass"
+   },
+   {
+    "check": "Matched-mean AUC effect at 4, 2 and 1 ms",
+    "authority": "each grid uses its own sampled flow means",
+    "measured": "4 ms: -0.00541%, 2 ms: -0.00541%, 1 ms: -0.00540%",
+    "error": 1.553294792788762e-08,
+    "status": "pass"
+   },
+   {
+    "check": "AUC 0-24 h, mean-heart flows vs ICRP reference flows (CO/pattern scale effect)",
+    "authority": "heart CO 6.35 vs ICRP 6.50 L/min",
+    "measured": "+0.37%",
+    "error": 0.003735278636912698,
+    "status": "pass"
+   },
+   {
+    "check": "plasma swing during cycle 3 of the IV bolus",
+    "authority": "the beat-scale variation the PC-mean engine cannot resolve",
+    "measured": "+2.31%",
+    "error": 0.02307555563927477,
+    "status": "pass"
+   }
+  ],
+  "_profile": [
+   {
+    "t_h": 0.5,
+    "pulsatile_mg_l": 0.10651,
+    "mean_mg_l": 0.10649,
+    "rel": 0.0002
+   },
+   {
+    "t_h": 2.0,
+    "pulsatile_mg_l": 0.06077,
+    "mean_mg_l": 0.06075,
+    "rel": 0.0002
+   },
+   {
+    "t_h": 6.0,
+    "pulsatile_mg_l": 0.01711,
+    "mean_mg_l": 0.01711,
+    "rel": 0.0002
+   },
+   {
+    "t_h": 12.0,
+    "pulsatile_mg_l": 0.00603,
+    "mean_mg_l": 0.00603,
+    "rel": 0.0002
+   },
+   {
+    "t_h": 24.0,
+    "pulsatile_mg_l": 0.00083,
+    "mean_mg_l": 0.00083,
+    "rel": 0.0002
+   }
+  ]
+ },
+ "observed_overlay": {
+  "authority": "clinical midazolam plasma observations (OSP digitized set); the flow-grain change must stay inside the accuracy band of the mean engine (which validate_body.py scores across the full dataset panel)",
+  "entries": [
+   {
+    "check": "Olkkola 1993 - iv Control (Perpetrator Placebo) (aggregated, dose 0.05 mg/kg, n = 6)",
+    "authority": "clinical plasma data (OSP digitized; NOT used to fit the flow layer); study nearest the panel-median AUC ratio of validate_body.py",
+    "measured": "AUC pred/obs: mean-stream 1.25, pulse-coupled 1.26 (change vs ICRP mean-flow engine +0.4%); AAFE 1.31",
+    "error": null,
+    "status": "pass"
+   },
+   {
+    "check": "Olkkola 1993 - po Control (Perpetrator Placebo) (aggregated, dose 15 mg, n = 12)",
+    "authority": "clinical plasma data (OSP digitized; NOT used to fit the flow layer); study nearest the panel-median AUC ratio of validate_body.py",
+    "measured": "AUC pred/obs: mean-stream 1.15, pulse-coupled 1.15 (change vs ICRP mean-flow engine -0.2%); AAFE 1.85",
+    "error": null,
+    "status": "pass"
+   }
+  ]
+ },
+ "headline": {
+  "prediction": "pressures, output and uptake of one closed loop",
+  "baseline": {
+   "cardiac_output_l_min": 6.354,
+   "sv_ml": 90.775,
+   "ef": 0.634,
+   "edv_lv_ml": 143.174,
+   "map_mmhg": 90.462,
+   "sap_mmhg": 107.343,
+   "dap_mmhg": 69.681,
+   "mean_p_ra": 3.463,
+   "mean_p_la": 5.907,
+   "pap_sys_mmhg": 21.57,
+   "pap_dia_mmhg": 12.411
+  },
+  "waveform_effect_auc_24h": -5.4060394133470524e-05,
+  "note": "Baseline hemodynamics are compared with published reference values. AUC is integrated within each segment and compared with a steady solver using the same sampled mean flows. The waveform result is a model prediction."
+ }
+}

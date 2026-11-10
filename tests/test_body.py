@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from vh.body import MIDAZOLAM, Dose, Ionization, PBPKModel, RealTimeSimulator, reference_individual
+from vh.body.calibration import clearance_overrides
 from vh.body.compound import Compound
 from vh.body.partition import kpu_all, tissue_data
 from vh.body.physiology import TISSUES, make_individual, sample_population
@@ -36,6 +37,23 @@ def test_iv_auc_equals_dose_over_clearance(mdz):
     cl = mdz.p.cl_total_plasma_l_h
     # renal elimination is taken from kidney tissue, so allow a tiny difference
     assert auc == pytest.approx(dose / cl, rel=0.01)
+
+
+def test_clearance_calibration_matches_integrated_compartment_model(mdz):
+    systemic, apparent_oral = 22.2, 84.78  # L/h, feasible reference targets
+    overrides = clearance_overrides(mdz, systemic, apparent_oral)
+    model = PBPKModel(MIDAZOLAM, mdz.ind, **overrides)
+    # Integrate the transient state to infinity directly from the matrix,
+    # independent of the clearance algebra used by the calibration.
+    names = [name for name in model.names if not name.startswith("elim_") and name != "feces"]
+    transient = [model.ix[name] for name in names]
+    A = model.M[np.ix_(transient, transient)]
+    for site, clearance in (("venous", systemic), ("stomach", apparent_oral)):
+        unit_dose = np.zeros(len(transient))
+        unit_dose[names.index(site)] = 1.0
+        integral = np.linalg.solve(-A, unit_dose)
+        auc = integral[names.index("venous")] / (model.V["venous"] * model.p.bp)
+        assert 1.0 / auc == pytest.approx(clearance, rel=1e-12)
 
 
 def test_steady_state_infusion(mdz):

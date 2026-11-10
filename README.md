@@ -61,7 +61,7 @@ faster than real time.
 | `vh.molecular` | From-scratch JAX engine: AMBER ff14SB force field, GB-OBC2 implicit water, autodiff forces, Langevin (BAOAB) and Verlet dynamics, L-BFGS minimization | Matches OpenMM (used only as a referee) term by term to ~1e-14 relative on real proteins; trajectories identical step by step; energy conserved ([`docs/validation_molecular.md`](docs/validation_molecular.md)) |
 | `vh.body` | From-scratch whole-body PBPK: 13 organs + blood, Rodgers & Rowland tissue partitioning, liver (well-stirred, IVIVE), kidney (filtration), oral absorption (stomach + 7-segment intestine) with gut-wall first-pass, virtual populations; solved exactly with matrix exponentials | Bottom-up midazolam predictions vs 100 clinical datasets (IV and oral) digitized by the Open Systems Pharmacology project |
 | `vh.bridge` | Unbound drug at the target organ → receptor occupancy over time; Kd ↔ binding free energy | Analytic round-trip; kinetic occupancy |
-| `vh.graph` | **Formalizes the body as a typed graph** across scales (organs↔blood flow, atoms↔bonds); graph algorithms for reachability, pathways, cycles, flow balance, bottlenecks; **conserved-flow graphs** with R/C/L edge laws, gravity, Bernoulli, Starling collapse and valves; renders and verifies subgraphs | Blood conservation (Kirchhoff) to 1e-16 on the real PBPK model; a pure graph BFS reproduces the force field's exclusion list exactly; steady flow exact against Hagen–Poiseuille/Windkessel/Starling, and the standing foot venous pressure predicted at **88.7 mmHg** vs the physiological **85–90 mmHg** range ([`docs/graph_formalization.md`](docs/graph_formalization.md), [`docs/bernoulli_veins.md`](docs/bernoulli_veins.md)) |
+| `vh.graph` | **Formalizes the body as a typed graph** across scales (organs↔blood flow, atoms↔bonds); graph algorithms for reachability, pathways, cycles, flow balance, bottlenecks; **conserved-flow graphs** with R/C/L edge laws, gravity, Bernoulli, Starling collapse and valves; **a beating four-chamber heart driving the closed circulation** (time-varying elastance, valves, pools, 12 ICRP organ beds); **drug transport riding the beat**; renders and verifies subgraphs | Blood conservation (Kirchhoff) to 1e-16 on the real PBPK model; a pure graph BFS reproduces the force field's exclusion list exactly; steady flow exact against Hagen–Poiseuille/Windkessel/Starling, and the standing foot venous pressure predicted at **88.7 mmHg** vs the physiological **85–90 mmHg** range; the beating heart predicts **CO 6.36 L/min, 107/70 mmHg, EF 63 %, SV 91 mL** — all inside the published normal column of Broomé et al. 2013 — and its flow-coupled drug layer reproduces the validated PBPK engine exactly at mean flow ([`docs/validation_flow.md`](docs/validation_flow.md), [`docs/validation_circulation.md`](docs/validation_circulation.md)) |
 | `web/` | Real-time demo: atom-level protein dynamics and a virtual patient, live in the browser | JS engine checked against the Python engine to ≤1e-12 |
 
 The explicit-solvent engine (`vh.molecular.periodic`, `.constraints`, `.explicit_md`) adds rung 3 of the accuracy ladder: every water molecule, exact long-range electrostatics (Ewald / smooth PME), rigid-water SHAKE/RATTLE and a Monte-Carlo barostat — validated term-by-term against OpenMM Ewald (energy to 1e-13, PME to 1e-11, constraints to 1e-16).
@@ -141,6 +141,43 @@ lumped graphs to 1-D PDEs, CFD, surrogates and digital twins is in
 [`docs/validation_flow.md`](docs/validation_flow.md). A plain-language walkthrough
 with charts is in [`docs/flow_explained.md`](docs/flow_explained.md). Reproduce
 with `python scripts/validate_flow.py`.
+
+### The beating heart, and the drug on its flow
+
+The same graph, with time-varying-elastance chambers on it, becomes a **closed
+circulation that beats**. Four chambers, four one-way valves, four elastic pools
+and the twelve ICRP organ beds; total blood volume is a linear invariant of the
+equations. In a periodic state, both ventricles must eject equal stroke volumes.
+Nothing is fitted to the outputs: valve areas, compliances, Emax/Emin and the
+blood-volume split draw on published values. The resting outputs can be compared
+with the published normal references.
+
+| Baseline (ICRP male, 5.3 L blood) | This heart | Published normal (Broomé 2013) |
+|---|---|---|
+| cardiac output | **6.35 L/min** | 6.3 ± 2.4 |
+| stroke volume / EF | **91 mL / 63 %** | 89 ± 30 mL / 59 ± 4 % |
+| aortic pressure | **107/70 mmHg** | 112/74 |
+| mean RAP / LAP | **3.5 / 5.9 mmHg** | 4.8 ± 2.4 / 8.3 ± 2.5 |
+| pulmonary artery | **22/12 mmHg** | 22/9 |
+
+<p align="center">
+  <img src="docs/img/circulation_wiggers.png" width="640" alt="One cardiac cycle of the beating-heart graph: pressures, volumes, valve flows">
+</p>
+
+Preload raises output (Frank–Starling), halving contractility lowers EF and
+congests the atrium, and tachycardia shortens the beat. Then the drug layer:
+`vh.graph.uptake` reuses the validated PBPK state, volumes, partitioning and
+clearance, and replaces only the flows with the beat's own q(t) — at ICRP flows
+the transport matrix is **identical** to the validated engine (0.0 difference),
+and the beat-coupled run conserves drug mass. For the reference midazolam
+scenario, using the full beat and matching the steady flow to the actual
+cycle means changes 24-hour plasma exposure by about **−0.005%**. This is a
+sensitivity result for the model under fixed compartment volumes.
+Model, equations and limits: [`docs/circulation.md`](docs/circulation.md);
+measured report: [`docs/validation_circulation.md`](docs/validation_circulation.md);
+plain-language walkthrough with charts:
+[`docs/circulation_explained.md`](docs/circulation_explained.md).
+Reproduce with `python scripts/validate_circulation.py`.
 
 ## Quick start
 
