@@ -1,7 +1,8 @@
 """Compare pulsatile circulation and steady-flow controls with published PK curves.
 
 Uses the same cohort inclusion and demographics as validate_body.py, with
-linked OSP study schedules when available. The IV clearance multiplier is fixed.
+linked OSP study schedules when available. An externally calibrated scenario
+uses Thummel et al. clearance measurements without fitting this panel.
 """
 from collections import defaultdict
 from dataclasses import replace
@@ -15,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from validate_body import IV_INFUSION_H, dose_for, individual_for, summarize, to_mg_l
-from vh.body import Dose, MIDAZOLAM, PBPKModel
+from vh.body import Dose, MIDAZOLAM, PBPKModel, clearance_overrides, reference_individual
 from vh.graph.circulation import CirculationParams, HeartCirculation
 from vh.graph.uptake import CirculationUptakeModel
 
@@ -30,6 +31,17 @@ def evaluate_panel():
     usable = [ds for ds in data["datasets"]
               if ds["data_type"] in ("aggregated", "typical representative")]
     scale = json.loads((DOCS / "validation_body.json").read_text())["clint_scale_middle_out"]
+    reference = json.loads((ROOT / "data/clinical/midazolam_thummel_clearance.json").read_text())
+    pmid = reference["source"].rstrip("/").rsplit("/", 1)[-1]
+    if any(ds["reference"].rstrip("/").rsplit("/", 1)[-1] == pmid for ds in usable):
+        raise ValueError("clearance calibration study is present in the evaluation panel")
+    independent = clearance_overrides(
+        PBPKModel(MIDAZOLAM, reference_individual("male")),
+        reference["mean_systemic_plasma_clearance_ml_min"] * 0.06,
+        reference["mean_apparent_oral_plasma_clearance_ml_min"] * 0.06,
+    )
+    scenarios = {"bottom_up": {}, "iv_calibrated": {"clint_scale": scale},
+                 "independent_clearance": independent}
     groups = defaultdict(list)
     for ds in usable:
         ind = individual_for(ds)
@@ -40,8 +52,8 @@ def evaluate_panel():
         ind = group[0][1]
         heart = HeartCirculation(CirculationParams.from_individual(ind))
         beat = heart.simulate(n_beats=45, dt=1e-3, record_last=8)
-        for scenario, multiplier in (("bottom_up", 1.0), ("iv_calibrated", scale)):
-            pbpk = PBPKModel(MIDAZOLAM, ind, clint_scale=multiplier)
+        for scenario, parameters in scenarios.items():
+            pbpk = PBPKModel(MIDAZOLAM, ind, **parameters)
             model = CirculationUptakeModel(pbpk, heart)
             matched = CirculationUptakeModel(pbpk, heart,
                                              mean_flows_l_h=model.mean_transport_flows(beat))
@@ -88,12 +100,35 @@ def evaluate_panel():
     return {"provenance": data["provenance"], "studies": len({ds["study"] for ds in usable}),
             "iv_clearance_multiplier": scale, "fallback_iv_infusion_h": IV_INFUSION_H,
             "schedule_source": schedules["source"],
+            "independent_clearance": reference | {"overrides": independent},
             "sample_every_h": SAMPLE_H, "results": results}
+
+
+def paired_study_comparison(results, route):
+    """Resample studies, keeping all paired profiles within each study together."""
+    by_scenario = {
+        scenario: {r["dataset"]: r for r in results if (r["scenario"], r["route"], r["flow"])
+                   == (scenario, route, "heart_pulsatile")}
+        for scenario in ("iv_calibrated", "independent_clearance")
+    }
+    old, new = by_scenario.values()
+    assert old.keys() == new.keys()
+    differences = defaultdict(list)
+    for name, row in new.items():
+        new_error = abs(np.log(row["auc_pred"] / row["auc_obs"]))
+        old_error = abs(np.log(old[name]["auc_pred"] / old[name]["auc_obs"]))
+        differences[row["study"]].append(new_error - old_error)
+    sums = np.array([sum(values) for values in differences.values()])
+    counts = np.array([len(values) for values in differences.values()])
+    draws = np.random.default_rng(0).integers(0, len(sums), size=(10_000, len(sums)))
+    ratios = np.exp(sums[draws].sum(axis=1) / counts[draws].sum(axis=1))
+    return {"studies": len(sums), "auc_gmfe_ratio": float(np.exp(sums.sum() / counts.sum())),
+            "study_bootstrap_95pct": np.quantile(ratios, [0.025, 0.975]).tolist()}
 
 
 def aggregate(report):
     summary = []
-    for scenario in ("bottom_up", "iv_calibrated"):
+    for scenario in ("bottom_up", "iv_calibrated", "independent_clearance"):
         for route in ("IV", "PO"):
             groups = {}
             for mode in FLOW_MODES:
@@ -114,15 +149,20 @@ def aggregate(report):
                 "median": float(np.median(paired)), "max": float(paired.max()),
             }
     report["summary"] = summary
+    report["independent_vs_iv_calibrated"] = {
+        route: paired_study_comparison(report["results"], route) for route in ("IV", "PO")
+    }
     return report
 
 
 def plot_panel(report):
     import matplotlib.pyplot as plt
+    from matplotlib.ticker import NullFormatter
 
-    fig, axes = plt.subplots(1, 2, figsize=(10.5, 4.8), sharey=True, layout="constrained")
+    fig, axes = plt.subplots(1, 3, figsize=(14, 4.8), sharey=True, layout="constrained")
     scenarios = (("bottom_up", "No fit to this panel"),
-                 ("iv_calibrated", "Clearance calibrated on IV profiles"))
+                 ("iv_calibrated", "Clearance fitted on panel IV data"),
+                 ("independent_clearance", "Clearance from a separate study"))
     for ax, (scenario, title) in zip(axes, scenarios):
         ax.axhspan(0.5, 2.0, color="#ddeeea")
         ax.axhline(1, color="#334155", linewidth=1)
@@ -140,6 +180,7 @@ def plot_panel(report):
             labels.append(f"{label}{note}\n{inside}/{len(ratio)} within 2×")
         ax.set(yscale="log", xlim=(-0.55, 1.55), xticks=[0, 1], xticklabels=labels, title=title)
         ax.set_yticks([0.25, 0.5, 1.0, 2.0, 3.0], ["0.25×", "0.5×", "1×", "2×", "3×"])
+        ax.yaxis.set_minor_formatter(NullFormatter())
         ax.grid(axis="y", alpha=0.2)
         ax.spines[["top", "right"]].set_visible(False)
     axes[0].set_ylabel("Predicted / observed midazolam AUC")

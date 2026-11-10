@@ -148,15 +148,27 @@ intervals below are the cohort's measured 5th and 95th percentiles.
 Left ventricular measurements fall within the cohort's ranges. Right
 ventricular end-diastolic volume is low even after indexing for body size.
 The source includes trabeculae and the moderator band in the CMR blood pool,
-so the comparison also depends on the definition of chamber volume.
+so the comparison also depends on the definition of chamber volume. The gap
+persists in a study that excludes those structures. For men aged 21–47,
+Riffel et al. report a mean of 102.8 mL per metre of height, compared with
+78.7 mL/m in the simulation. [Riffel et al., Table 4](https://doi.org/10.1007/s10554-021-02160-z)
+
+The equations explain why simply increasing the RV volume offset cannot fix
+this. Adding the same volume to the RV and its unstressed volume leaves
+$E(t)(V-V_0)$ unchanged. Subtracting that volume from the venous pool and its
+unstressed volume preserves total blood volume and venous pressure. Every flow
+and the stroke volume therefore stay the same. In the reference run, moving
+the RV to the height-matched 181 mL MRI mean this way drops ejection fraction
+from 65.5% to 50.2%, further from the measured 62.9%. Matching both observables
+requires changing the stroke volume as well as the filling volume.
 
 For drug transport, we ran 82 aggregate or representative plasma profiles
 from 45 published studies. The OSP snapshot supplies 21 of 28 IV schedules,
 including Mikus et al.'s 30-minute infusion starting six hours after an oral
-dose. The remaining seven use the original two-minute fallback. We held the
-existing IV clearance multiplier fixed and scored measured and predicted AUC
-over identical positive observation times for each dataset. The oral profiles
-were withheld from the clearance fit. Several profiles share a study.
+dose. The remaining seven use the original two-minute fallback. We scored measured
+and predicted AUC over identical positive observation times. For the original
+calibration, the oral profiles were withheld from the IV fit. For the new
+calibration, both routes were held out by study. Several profiles share a study.
 [OSP data and protocols](https://github.com/Open-Systems-Pharmacology/Midazolam-Model/blob/cc916b5/Midazolam-Model.json)
 
 | Pulsatile model | Within a factor of two | AUC geometric mean fold error | Median predicted / observed |
@@ -165,19 +177,45 @@ were withheld from the clearance fit. Several profiles share a study.
 | Oral, no panel fit | 44/54 | 1.57× | 1.47× |
 | IV, calibration data | 25/28 | 1.38× | 1.25× |
 | Oral, withheld from IV calibration | 51/54 | 1.37× | 1.25× |
+| IV, separate clearance study | 26/28 | 1.31× | 1.03× |
+| Oral, separate clearance study | 52/54 | 1.27× | 0.90× |
 
 ![Observed versus predicted AUC in the full clinical panel](img/circulation_clinical_panel.png)
 
-The ICRP and matched-heart steady controls reach the same twofold counts in
-all four comparisons. Adding pulsation to the matched-heart control changes
-sampled AUC by at most 0.042% across this panel. The data constrain systemic
-exposure. They do not resolve a sub-percent heartbeat effect or concentrations
-inside each organ. The liver extraction estimate is another comparison point:
-0.284 without a panel fit and 0.309 with the IV calibration versus the
-published 0.44 ± 0.14. [Thummel et al.](https://pubmed.ncbi.nlm.nih.gov/8646820/)
+The independent calibration improves total exposure in this panel. It shifts
+the oral median from 25% high to 10% low. Oral peak concentration at the
+observed sampling times was within twofold for 49/54 profiles, down from 51/54.
+The study-level bootstrap intervals for the ratios of AUC fold error include
+1.0, so the apparent gains are uncertain across studies. Adding pulsation to
+the matched-heart steady control changes sampled AUC by less than 0.05%
+across the panel. These observations constrain systemic exposure and leave
+beat-resolved drug exposure and organ concentrations untested.
 
-See the [per-profile scores](validation_circulation_panel.json) and rerun with
-`python scripts/validate_circulation_panel.py`.
+### Clearance from a separate human study
+
+The new scenario uses the systemic and apparent oral clearances measured by
+Thummel et al. in 20 subjects (370 and 1,413 mL/min, respectively). That study
+is outside the 82-profile panel. We use its reported group means as targets
+for the reference physiology, then retain liver-size scaling for other
+individuals. [Thummel et al.](https://pubmed.ncbi.nlm.nih.gov/8646820/)
+
+The parameters follow analytically from the existing equations. For steady
+flows, plasma clearance is the sum of renal and hepatic extraction multiplied
+by the respective organ blood flows and blood-to-plasma ratio. Solving this
+balance determines hepatic intrinsic clearance. Oral bioavailability is
+$F=F_a F_g(1-E_h)$ in this model. The ratio of the systemic and apparent oral
+clearance targets determines the reference $F$, which then determines gut
+escape $F_g$. We obtain a hepatic activity multiplier of 1.480 and a gut escape
+fraction of 0.423. The latter is an inferred model parameter. The ratio of
+published group means does not estimate the mean individual bioavailability.
+
+Use `clearance_overrides` with an unscaled reference `PBPKModel` and the two
+clearance targets in L/h. Pass the returned overrides to `PBPKModel` before
+building `CirculationUptakeModel`. This makes the clearance calibration an
+explicit choice and leaves the original bottom-up parameterization available.
+
+See the [per-profile scores and bootstrap estimates](validation_circulation_panel.json)
+and rerun with `python scripts/validate_circulation_panel.py`.
 
 ## What can be proved about pulsation
 
