@@ -1,7 +1,7 @@
 """Drug transport riding the beating circulation: organ uptake on the graph.
 
 The validated PBPK engine (:mod:`vh.body.pbpk`) treats organ blood flow as
-constant.  That is exact for whole-body exposure on hours, but the heart beats,
+constant.  The heart beats,
 and the question "how does the medicine reach an organ" has a beat-by-beat
 answer the body-level engine cannot see.  This module couples the two without
 inventing a second mass balance:
@@ -23,9 +23,9 @@ Two authorities structure the validation:
 
   1. at ICRP flows the transport matrix must equal the validated PBPK matrix
      (implementation-level cross-check), and both solvers must agree;
-  2. the pulsatile run must converge to the mean-stream run as the transport
-     step shrinks, and the difference between the two quantifies how much the
-     heartbeat actually modulates organ uptake.
+  2. the pulsatile solution must converge as the transport step shrinks. A
+     steady simulation using the mean of the same sampled flows isolates
+     the effect of pulsation.
 
 Units: amount mg, volume L, flow L/h, concentration mg/L, time h
 (circulation-record flows are mL/s and converted once, at the interface).
@@ -66,8 +66,8 @@ class _BeatTransport:
 
     n: int
     n_seg: int
-    dt_seg_s: float
     dt_h: float
+    generators: list[np.ndarray]
     E: list
     f: list
     S: list
@@ -153,17 +153,16 @@ def organ_net_uptake_l_h(model, x, flows_l_h: dict[str, float]) -> dict[str, flo
     c_arterial = xb[ix["arterial"]] / V["arterial"]        # total blood conc, mg/L
     uptake = {}
     for t in TISSUES:
+        q_out = flows_l_h[t]
         if t == "lung":
-            inflow = flows_l_h["lung"]
-            amount_in = (xb[ix["venous"]] / V["venous"]) * inflow
-        elif t == "liver":
-            q_in = flows_l_h["liver"]
-            amount_in = (c_arterial * flows_l_h["liver"]
-                         + sum(out_k[g] * xb[ix[g]] * flows_l_h[g] for g in PORTAL))
+            amount_in = (xb[ix["venous"]] / V["venous"]) * q_out
         else:
-            q_in = flows_l_h[t]
-            amount_in = c_arterial * flows_l_h[t]
-        amount_out = out_k[t] * xb[ix[t]] * (flows_l_h[t] if t != "lung" else flows_l_h["lung"])
+            amount_in = c_arterial * q_out
+        if t == "liver":
+            for g in PORTAL:
+                amount_in += out_k[g] * xb[ix[g]] * flows_l_h[g]
+                q_out += flows_l_h[g]
+        amount_out = out_k[t] * xb[ix[t]] * q_out
         uptake[t] = float(amount_in - amount_out)
     return uptake
 
@@ -232,98 +231,88 @@ class CirculationUptakeModel:
         x[sink] = np.maximum(prod[sink], 0.0)
         return x
 
-    # -- simulate (mean flows, exact per step as pbpk) -----------------------
-    def simulate_mean(self, doses, t_end_h: float, dt_h: float = 0.05) -> dict:
-        """Exact stream of the PBPK state at constant mean flows.
-
-        Same event logic as :meth:`vh.body.pbpk.PBPKModel.simulate`; output has
-        the same keys as its ``observe``.
-        """
-        M = self.matrix(self.flows_mean_l_h)
+    def _generator(self, flows_l_h):
+        """Augment the drug state with plasma AUC and a constant infusion rate."""
+        M = self.matrix(flows_l_h)
         n = M.shape[0]
+        venous = self.pbpk.ix["venous"]
+        generator = np.zeros((n + 2, n + 2))
+        generator[:n, :n] = M
+        generator[n, venous] = 1.0 / (self.pbpk.V["venous"] * self.pbpk.p.bp)
+        generator[venous, n + 1] = 1.0
+        return generator
+
+    def _simulate(self, doses, t_end_h, sample_every_h, advance):
+        """Advance between exact sample times and dose boundaries."""
+        times = np.arange(0.0, t_end_h, sample_every_h)
+        # Include the horizon once, even when arange lands just below it.
+        if len(times) > 1 and t_end_h - times[-1] <= 1e-12:
+            times = times[:-1]
+        times = np.r_[times, t_end_h]
         ix = self.pbpk.ix
-        times = np.arange(0.0, t_end_h + 1e-9, dt_h)
-        events = sorted({0.0, t_end_h,
-                         *[d.time_h for d in doses],
-                         *[d.time_h + d.duration_h for d in doses
-                           if d.route == "iv" and d.duration_h > 0]})
-        x = np.zeros(n)
+        iv = []
+        boluses = {}
+        for dose in doses:
+            if dose.route == "iv" and dose.duration_h > 0:
+                iv.append((dose.time_h, dose.time_h + dose.duration_h,
+                           dose.amount_mg / dose.duration_h))
+            elif dose.route == "oral" or dose.duration_h <= 0:
+                site = ix["stomach" if dose.route == "oral" else "venous"]
+                boluses.setdefault(dose.time_h, []).append((site, dose.amount_mg))
+        events = set(boluses) | {t for start, end, _ in iv for t in (start, end)}
+        samples = {t: i for i, t in enumerate(times)}
+        bounds = sorted({0.0, *samples} | {t for t in events if 0 <= t <= t_end_h})
+        x = np.zeros(len(ix) + 1)
+        states = np.empty((len(times), len(x)))
         t = 0.0
-        states = np.zeros((len(times), n))
+        for next_t in bounds:
+            if next_t > t:
+                rate = sum(r for start, end, r in iv if start <= t < end)
+                x = advance(x, t, next_t, rate)
+            for site, amount in boluses.get(next_t, ()):
+                x[site] += amount
+            if next_t in samples:
+                states[samples[next_t]] = x
+            t = next_t
+        drug_states = states[:, :-1]
+        return {**self.pbpk.observe(drug_states), "time_h": times, "state": drug_states,
+                "plasma_auc_mg_h_l": states[:, -1]}
 
-        def rate_at(tt):
-            return sum(d.amount_mg / d.duration_h for d in doses
-                       if d.route == "iv" and d.duration_h > 0
-                       and d.time_h <= tt + 1e-12 < d.time_h + d.duration_h)
+    def simulate_mean(self, doses, t_end_h: float, dt_h: float = 0.05) -> dict:
+        """Exact transport at constant flows, including continuous plasma AUC."""
+        generator = self._generator(self.flows_mean_l_h)
 
-        def bolus_at(tt, xx):
-            for d in doses:
-                if abs(d.time_h - tt) < 1e-12:
-                    if d.route == "oral":
-                        xx[ix["stomach"]] += d.amount_mg
-                    elif d.duration_h <= 0:
-                        xx[ix["venous"]] += d.amount_mg
-            return xx
+        def advance(x, start, end, rate):
+            step = expm(generator * (end - start))
+            return step[:-1, :-1] @ x + rate * step[:-1, -1]
 
-        x = bolus_at(0.0, x)
-        states[0] = x
-        k = 1
+        return self._simulate(doses, t_end_h, dt_h, advance)
 
-        def propagator(h, rate):
-            nn = M.shape[0]
-            aug = np.zeros((nn + 1, nn + 1))
-            aug[:nn, :nn] = M
-            aug[ix["venous"], nn] = rate
-            E = expm(aug * h)
-            return E[:nn, :nn], E[:nn, nn]
+    def _sample_beat_flows(self, beat: BeatRecord, dt_transport_s: float):
+        period = self.heart.period
+        n_seg = max(8, int(np.ceil(period / dt_transport_s)))
+        dt_seg = period / n_seg
+        centres = (np.arange(n_seg) + 0.5) * dt_seg
+        time_s = beat.time_s - beat.time_s[0]
+        bed_ids = {name: f"bed_{name}" for name in self.heart.bed_names}
+        bed_ids["lung"] = "pulmonary"
+        flows = {name: np.interp(centres, time_s, beat.flow_at(fid), period=period)
+                 * LH_PER_ML_S for name, fid in bed_ids.items()}
+        return dt_seg, flows
 
-        breakpoints = sorted(set(events) | set(times.tolist()))
-        for t_next in breakpoints[1:]:
-            h = t_next - t
-            if h <= 1e-12:
-                continue
-            E, f = propagator(h, rate_at(t))
-            x = E @ x + f
-            t = t_next
-            x = bolus_at(t, x)
-            while k < len(times) and abs(times[k] - t) < 1e-9:
-                states[k] = x
-                k += 1
-        obs = self.pbpk.observe(states)
-        obs["time_h"] = times
-        obs["state"] = states
-        return obs
+    def mean_transport_flows(self, beat: BeatRecord, dt_transport_s: float = 0.004):
+        """Mean of the exact segment flows used by the pulsatile transport."""
+        _, flows = self._sample_beat_flows(beat, dt_transport_s)
+        return {name: float(values.mean()) for name, values in flows.items()}
 
     def _beat_transport(self, beat: BeatRecord, dt_transport_s: float) -> _BeatTransport:
-        """Precompute the exact per-segment exponentials of one cardiac cycle.
-
-        The cycle is tiled into ``ceil(T/dt)`` equal segments; flows are the
-        recorded beat's bed/lung flows sampled at segment centres (linear
-        interpolation across the wrap), held piecewise-constant.  For each
-        segment the exact one-step exponential ``E_k`` is formed, plus the
-        unit-rate infusion plateau ``f_k``; then the affine suffix/prefix
-        products of :class:`_BeatTransport`.  This is bookkeeping only: every
-        later advance reuses these same exact exponentials.
-        """
-        n = self.pbpk.M.shape[0]
-        ix = self.pbpk.ix
-        t_rec = beat.time_s
-        phase_u = (t_rec - t_rec[0]) % self.heart.period
-        order = np.argsort(phase_u)
-        ph = phase_u[order]
-        n_seg = max(8, int(np.ceil(self.heart.period / dt_transport_s)))
-        dt_seg = self.heart.period / n_seg
-        centres = 0.5 * (np.arange(n_seg) + 0.5) * dt_seg
-        base = {"lung": beat.flow_at("pulmonary")[order]}
-        for b in self.heart.bed_names:
-            base[b] = beat.flow_at(f"bed_{b}")[order]
-        wrapped = np.r_[ph, self.heart.period]
-        q_l_h = {k: np.interp(centres, wrapped, np.r_[v, v[0]]) * LH_PER_ML_S
-                 for k, v in base.items()}
+        """Precompute propagators for a full cycle, sampled at segment midpoints."""
+        dt_seg, q_l_h = self._sample_beat_flows(beat, dt_transport_s)
+        n_seg = len(q_l_h["lung"])
+        n = len(self.pbpk.names) + 1  # drug amounts and plasma AUC
         dt_h = dt_seg / 3600.0
         E, f = [], []
-        aug = np.zeros((n + 1, n + 1))
-        aug[n, n] = 1.0
+        generators = []
         # scipy's expm scales-and-squares with enormous probe powers while
         # picking the Pade structure; on this platform numpy then raises
         # spurious matmul RuntimeWarnings (divide/overflow/invalid) -- they
@@ -335,10 +324,9 @@ class CirculationUptakeModel:
                                                     divide="ignore"):
             warnings.filterwarnings("ignore", category=RuntimeWarning)
             for k in range(n_seg):
-                M = self.matrix({t: float(q_l_h[t][k]) for t in q_l_h})
-                aug[:n, :n] = M
-                aug[ix["venous"], n] = 1.0
-                A = expm(aug * dt_h)
+                generator = self._generator({t: float(q_l_h[t][k]) for t in q_l_h})
+                generators.append(generator)
+                A = expm(generator * dt_h)
                 E.append(A[:n, :n])
                 f.append(A[:n, n])
             # suffix pairs: applying segments k .. n_seg-1 completes the beat
@@ -358,8 +346,8 @@ class CirculationUptakeModel:
         P_aug[:n, :n] = S[0]
         P_aug[:n, n] = F[0]
         P_aug[n, n] = 1.0
-        return _BeatTransport(n=n, n_seg=n_seg, dt_seg_s=dt_seg, dt_h=dt_h,
-                              E=E, f=f, S=S, F=F, L=L, Lf=Lf, P_aug=P_aug)
+        return _BeatTransport(n=n, n_seg=n_seg, dt_h=dt_h,
+                              generators=generators, E=E, f=f, S=S, F=F, L=L, Lf=Lf, P_aug=P_aug)
 
     @staticmethod
     def _advance_segments(x, seg0: int, m: int, rate: float, bt: _BeatTransport):
@@ -396,63 +384,31 @@ class CirculationUptakeModel:
     def simulate_pulsatile(self, beat: BeatRecord, doses, t_end_h: float,
                            dt_transport_s: float = 0.004,
                            sample_every_h: float = 0.01) -> dict:
-        """Exact transport with the beat's own flows: q_i(t) piecewise-constant.
+        """Exact transport on piecewise-constant flows over a repeating beat.
 
-        The cardiac cycle is tiled into equal segments (< ``dt_transport_s``);
-        on each segment the drug state advances by the exact matrix exponential
-        of that segment's transport matrix, so total drug mass (with the
-        eliminated amounts tracked as states) is conserved to machine precision
-        however the heartbeat modulates the flows.  Long runs regroup whole
-        beats into matrix powers of the full-beat propagator (an exact
-        regrouping of the same exponentials).  Boluses land on the segment
-        grid, within one segment (~4 ms) of their nominal time.
+        Complete segments use precomputed propagators and whole beats use
+        matrix powers. Dose events and observations can split segments without
+        changing the waveform or rounding the delivered dose. Plasma AUC is
+        integrated alongside drug mass and returned at each observation time.
         """
         bt = self._beat_transport(beat, dt_transport_s)
-        ix = self.pbpk.ix
-        iv = [d for d in doses if d.route == "iv" and d.duration_h > 0]
 
-        def rate_at(t):
-            return sum(d.amount_mg / d.duration_h for d in iv
-                       if d.time_h <= t < d.time_h + d.duration_h)
+        def partial(x, segment, fraction, rate):
+            step = expm(bt.generators[segment % bt.n_seg] * (fraction * bt.dt_h))
+            return step[:-1, :-1] @ x + rate * step[:-1, -1]
 
-        if sample_every_h is None:
-            sample_every_h = bt.dt_h
-        times = np.arange(0.0, t_end_h + 1e-12, sample_every_h)
-        if times[-1] < t_end_h - 1e-9:
-            times = np.append(times, t_end_h)
-        boluses = sorted((d.time_h, d.amount_mg, d.route) for d in doses
-                         if (d.route == "oral" or d.duration_h <= 0)
-                         and d.time_h > 1e-12)
-        events = sorted({e for d in iv for e in (d.time_h, d.time_h + d.duration_h)}
-                        | {b[0] for b in boluses})
-        bounds = np.unique(np.r_[0.0, t_end_h, times,
-                                 np.asarray(events, dtype=float)])
-        bounds = bounds[bounds <= t_end_h + 1e-12]
+        def advance(x, start, end, rate):
+            start, end = start / bt.dt_h, end / bt.dt_h
+            first, last = int(start), int(end)
+            if first == last:
+                return partial(x, first, end - start, rate)
+            if start > first:
+                x = partial(x, first, first + 1 - start, rate)
+                first += 1
+            x, _ = self._advance_segments(x, first % bt.n_seg, last - first, rate, bt)
+            if end > last:
+                x = partial(x, last, end - last, rate)
+            return x
 
-        x = np.zeros(bt.n)
-        for d in doses:
-            if abs(d.time_h) < 1e-12:
-                if d.route == "oral":
-                    x[ix["stomach"]] += d.amount_mg
-                elif d.duration_h <= 0:
-                    x[ix["venous"]] += d.amount_mg
-        states = np.zeros((len(times), bt.n))
-        states[0] = x
-        seg0, t_cur, k, bi = 0, 0.0, 1, 0
-        for b in bounds[1:]:
-            b = min(float(b), t_end_h)
-            m = int(round((b - t_cur) / bt.dt_h))
-            if m > 0:
-                x, seg0 = self._advance_segments(x, seg0, m, rate_at(t_cur), bt)
-                t_cur += m * bt.dt_h
-            while bi < len(boluses) and boluses[bi][0] <= t_cur + bt.dt_h * 0.5:
-                _, amount, route = boluses[bi]
-                x[ix["stomach" if route == "oral" else "venous"]] += amount
-                bi += 1
-            while k < len(times) and times[k] <= t_cur + bt.dt_h + 1e-12:
-                states[k] = x
-                k += 1
-        obs = self.pbpk.observe(states)
-        obs["time_h"] = times
-        obs["state"] = states
-        return obs
+        interval = bt.dt_h if sample_every_h is None else sample_every_h
+        return self._simulate(doses, t_end_h, interval, advance)

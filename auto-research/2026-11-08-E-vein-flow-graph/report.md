@@ -199,79 +199,31 @@ cycle-mean flow?
 - **Drug layer.** `vh.graph.uptake` keeps the validated PBPK state, volumes,
   partition coefficients, clearance and oral absorption exactly; only the flows
   change. Each segment's transport matrix is exponentiated exactly on a 4 ms
-  grid, and full beats regroup into a matrix power of the beat propagator, so a
-  24 h beat-coupled simulation takes ~0.2 s. At ICRP reference flows the
+  grid, and full beats regroup into a matrix power of the beat propagator.
+  At ICRP reference flows the
   transport matrix is identical to the PBPK engine's, which anchors the layer.
 
-## Validation — the part that matters
+## Circulation and uptake validation
 
-The baseline is compared with the *published normal column* of Broomé et al.
-2013 Table 1 (a different model's normal values), graded by distance in
-population SD: ≤1 SD pass, ≤3 SD note.
+The [generated validation report](../../docs/validation_circulation.md) records
+baseline outputs, comparisons with Broomé et al. Table 1, physiological sweeps,
+conservation and PBPK checks, and the Olkkola clinical overlays. Arterial
+pressures are compared with the published reference values because Table 1 does
+not provide SDs for them.
 
-| Quantity | This work | Broomé 2013 Table 1 | Distance |
-|---|---|---|---|
-| Cardiac output | **6.36 L/min** | 6.3 ± 2.4 | +0.02 SD |
-| Stroke volume | **90.8 mL** | 89 ± 30 | +0.06 SD |
-| Ejection fraction | **63.4 %** | 59 ± 4 | +1.10 SD (note) |
-| LVEDV / RVEDV | **143.2 / 138.5 mL** | 123 ± 28 / 111 ± 22 | +0.72 / +1.25 SD (RV note) |
-| Mean RAP / LAP | **3.46 / 5.91 mmHg** | 4.8 ± 2.4 / 8.3 ± 2.5 | −0.56 / −0.96 SD |
-| Aortic S/D | **107.3 / 69.6 mmHg** | 112/74 ± 12 | −0.39 / −0.36 SD |
-| Pulmonary artery S/D | **21.6 / 12.4 mmHg** | 22 ± 6 / 9 ± 5 | −0.07 / +0.68 SD |
-| MAP / pulse pressure | **90.5 / 37.7 mmHg** | — | derived |
-| LV dP/dt max | **1471 mmHg/s** | 1200–2200 | inside |
-| Aortic valve open time | **0.296 s** | ~0.3 s systole at HR 70 | inside |
+The original uptake comparison sampled the first half of the beat and applied
+it across the full period, raising average flow. The corrected comparison
+uses the full cycle and sets each steady flow to the mean of the actual
+pulsatile inputs. The solver integrates plasma AUC within each transport
+segment. For the reference 24-hour IV plus oral midazolam scenario, the
+matched comparison gives a change of about **−0.005%**, stable at 4, 2 and 1 ms
+transport steps. The clinical overlays compare concentrations to the existing
+ICRP mean-flow engine and observed data. Those comparisons include differences
+in mean flow.
 
-Every quantity is within one population SD except EF and RVEDV (1.1–1.25 SD);
-all are within three. The Wiggers morphology — atrial kick, isovolumic
-contraction, ejection, incisura, E and A waves — is reproduced.
-
-Identities of the equations themselves (machine precision, not fits):
-
-| Identity | Measured |
-|---|---|
-| Total blood-volume drift over 8 recorded beats | **1.6×10⁻¹¹ mL** |
-| Graph blood volume == ICRP 5.3 L | **6.1×10⁻¹¹ mL** |
-| LV and RV eject identically (one closed loop) | 1.0×10⁻⁴ relative |
-| Valve backflow | **exactly 0** mL/s |
-| Instantaneous bed split == ICRP shares | **2.2×10⁻¹⁶** relative |
-
-Physiological sweeps reproduce the published directions: +10 % blood volume →
-CO 8.79 L/min and EDV 193 mL (Frank–Starling); −10 % → CO 5.10; halved Emax →
-EF 49 %, EDV 159 mL, LAP 6.4 mmHg (systolic-failure direction); Emax ×1.3 →
-EF 68 %, CO 6.60; HR 100 → SV 69.9 mL, CO 6.99 L/min. These are **open-loop**
-(no baroreflex, no venoconstriction), so the −20 % hemorrhage case
-(CO 1.20 L/min, MAP 17 mmHg) exaggerates the collapse of an intact animal; the
-sweep verifies mechanism and direction, not compensated magnitude.
-
-Drug layer, against the validated PBPK engine and exact algebra:
-
-| Check | Measured |
-|---|---|
-| Transport matrix at ICRP flows == validated PBPK matrix | **0.0** max abs difference |
-| Pulsatile solver on a flat flow template == mean solver | **1.3×10⁻¹⁰** relative |
-| Mean-stream solver == PBPK engine (24 h, IV + oral) | **1.2×10⁻¹³** relative |
-| 24 h beat-coupled mass conservation (IV 5 mg + oral 7.5 mg) | **1.6×10⁻¹⁰ mg** |
-| Pulsatile 24 h infusion integral (10 mg/h → 240 mg) | 5.5×10⁻⁷ of delivered |
-| Steady state == engine's 96 h infusion plateau | 2.5×10⁻⁷ relative |
-| Plasma C_ss vs scalar R/CL_total | 7.8×10⁻⁵ low |
-| Discretization converged (dt 4 → 2 → 1 ms) | 4.4×10⁻⁶ / 5.7×10⁻⁶ relative |
-
-Clinical overlay: on the Olkkola 1993 control arms — the same study's IV and
-oral datasets, each the one nearest its route's panel-median AUC ratio, chosen
-a priori, not by looking at the curves — the pulse-coupled predictions give AUC
-pred/obs **1.39** (IV, mean-stream 1.25) and **1.07** (oral, mean-stream 1.15),
-with AAFE 1.45 and 1.79. The flow-grain change stays inside the mean engine's
-accuracy band.
-
-**The one prediction with no external authority.** How much does the *waveform*
-of the flow, rather than its cycle mean, change a plasma profile? There is no
-textbook value to check this against, so it is measured with both solvers locked
-to the *same* cycle-mean flows: the 24 h AUC of a combined IV + oral midazolam
-profile changes by **−7.1 %**. It converges to 0.00 % under dt halving. This
-number is a quantitative prediction of this layer, not a validated fact; the
-mean-heart flows themselves differ from ICRP reference flows by only +0.28 %,
-and the within-beat plasma swing is +2.7 % in a settled beat.
+The regression checks use an asymmetric waveform, compare dose delivery to the
+integrated infusion schedule at off-grid times, and verify the liver uptake
+diagnostic against the hepatic mass balance.
 
 ## Limits
 
@@ -284,7 +236,8 @@ and the within-beat plasma swing is +2.7 % in a settled beat.
   flow-waveform effect and is a documented next coupling step.
 - **Oral absorption is not flow-coupled.** The validated stomach/intestine chain
   is retained; villous blood flow is not pulsed.
-- **Boluses land on the 4 ms transport grid** (within one segment of nominal).
+- **Dose and observation times split segments.** The flow is held constant within
+  each segment.
 - **Hepatic extraction.** Bottom-up in-vitro CLint gives E_h 0.284, just below
   the published 0.30–0.50 band; the one-factor middle-out calibration gives
   0.309. Both are reported.
@@ -293,15 +246,15 @@ and the within-beat plasma swing is +2.7 % in a settled beat.
   externally validated.
 - **Tissue concentration swings within a beat are not reported as an
   observable.** In the first seconds after a bolus, far-from-equilibrium
-  compartments swing by >200 %; only the plasma swing (+2.7 %) is a sampled,
-  comparable quantity.
+  compartments are still loading. The report shows plasma variation during the
+  third beat after an IV bolus.
 
 ## Reproduce
 
 ```bash
 python scripts/validate_circulation.py   # writes validation_circulation.{json,md} + 4 figures
-pytest -q tests/test_circulation.py      # 27 tests
-pytest -q                                # full suite: 68 passed, 6 skipped
+pytest -q tests/test_circulation.py
+pytest -q
 ```
 
 Reports: `docs/circulation.md` (model, equations, limits),

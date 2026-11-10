@@ -50,6 +50,7 @@ from vh.graph.circulation import (  # noqa: E402
 )
 from vh.graph.uptake import (  # noqa: E402
     CirculationUptakeModel,
+    LH_PER_ML_S,
     extraction_ratio_liver,
     organ_net_uptake_l_h,
 )
@@ -95,19 +96,14 @@ def build_context():
 
     pbpk = PBPKModel(MIDAZOLAM, ind)
     u = CirculationUptakeModel(pbpk, heart)
-    # the heart-mean flow twin: same machinery, the beat's own cycle-mean flows
-    flows_h = {k.replace("mean_flow_bed_", ""): v * 3.6
-               for k, v in s.items() if k.startswith("mean_flow_bed_")}
-    flows_h["lung"] = s["mean_flow_pulmonic"] * 3.6
+    flows_h = u.mean_transport_flows(rec)
     u_h = CirculationUptakeModel(pbpk, heart, mean_flows_l_h=flows_h)
 
     flat = copy.copy(rec)
-    flat.flows = rec.flows.copy()  # flat template: every flow held at its beat mean
-    for j, fid in enumerate(rec.flow_ids):
-        if fid.startswith("bed_"):
-            flat.flows[:, j] = s[f"mean_flow_{fid}"]
-        elif fid == "pulmonary":
-            flat.flows[:, j] = s["mean_flow_pulmonic"]
+    flat.flows = rec.flows.copy()
+    for name, flow in flows_h.items():
+        fid = "pulmonary" if name == "lung" else f"bed_{name}"
+        flat.flows[:, rec.flow_ids.index(fid)] = flow / LH_PER_ML_S
 
     return {"ind": ind, "params": params, "heart": heart, "rec": rec, "s": s,
             "pbpk": pbpk, "u": u, "u_h": u_h, "flat": flat,
@@ -117,7 +113,6 @@ def build_context():
 PUB = {  # Broomé et al. 2013 Table 1, "normal" column: (published value, +- or range)
     "co": (6.3, 2.4), "sv": (89.0, 30.0), "ef": (0.59, 0.04), "lvedv": (123.0, 28.0),
     "rvedv": (111.0, 22.0), "rap": (4.8, 2.4), "lap": (8.3, 2.5),
-    "sap": (112.0, 12.0), "dap": (74.0, 12.0), "pap_s": (22.0, 6.0), "pap_d": (9.0, 5.0),
 }
 
 
@@ -188,10 +183,6 @@ def baseline_section(c):
         ("RVEDV (mL)", "edv_rv_ml", PUB["rvedv"]),
         ("mean RAP (mmHg)", "mean_p_ra", PUB["rap"]),
         ("mean LAP (mmHg)", "mean_p_la", PUB["lap"]),
-        ("aortic systolic (mmHg)", "sap_mmhg", PUB["sap"]),
-        ("aortic diastolic (mmHg)", "dap_mmhg", PUB["dap"]),
-        ("pulm. arterial systolic (mmHg)", "pap_sys_mmhg", PUB["pap_s"]),
-        ("pulm. arterial diastolic (mmHg)", "pap_dia_mmhg", PUB["pap_d"]),
     ]
     ent = []
     for label, key, (val, spread) in rows:
@@ -200,6 +191,15 @@ def baseline_section(c):
         status = "pass" if abs(z) <= 1.0 else ("note" if abs(z) <= 3.0 else "FAIL")
         ent.append(entry(label, f"Broomé 2013 Table 1 normal: {val} +- {spread}",
                          f"{v:.3f} ({z:+.2f} SD)", float(z), status))
+
+    for label, key, ref in (
+        ("aortic systolic (mmHg)", "sap_mmhg", 112),
+        ("aortic diastolic (mmHg)", "dap_mmhg", 74),
+        ("pulm. arterial systolic (mmHg)", "pap_sys_mmhg", 22),
+        ("pulm. arterial diastolic (mmHg)", "pap_dia_mmhg", 9),
+    ):
+        ent.append(entry(label, f"Broomé 2013 Table 1 normal: {ref} mmHg (SD unavailable)",
+                         round(float(s[key]), 3), None, "note"))
 
     # derived quantities with published normal ranges (not used to set anything)
     pp = float(s["pulse_pressure_mmhg"])
@@ -337,10 +337,10 @@ def drug_identities_section(c):
     oinf = u.simulate_pulsatile(rec, [Dose(0.0, 240.0, "iv", duration_h=24.0)], 24.0,
                                 dt_transport_s=0.004, sample_every_h=0.25)
     net = oinf["state"].sum(axis=1) - 10.0 * oinf["time_h"]
-    frac = float(abs(net[-1] - net[0]) / 240.0)
+    frac = float(np.max(np.abs(net)) / 240.0)
     ent.append(entry("pulsatile infusion integral exact (10 mg/h x 24 h = 240 mg)",
                      "affine plateau of the augmented exponential",
-                     f"{frac:.1e} of delivered", frac, "pass" if frac < 1e-5 else "note"))
+                     f"{frac:.1e} of delivered", frac, "pass" if frac < 1e-9 else "FAIL"))
 
     x = u.steady_state(10.0)
     M = u.matrix(dict(u.flows_mean_l_h))
@@ -417,8 +417,15 @@ def waveform_section(c):
     op = u.simulate_pulsatile(rec, doses, 24.0, dt_transport_s=0.004, sample_every_h=0.05)
     om_h = u_h.simulate_mean(doses, 24.0, dt_h=0.05)
     om_i = u.simulate_mean(doses, 24.0, dt_h=0.05)
-    auc = lambda o: float(np.trapezoid(o["plasma"], o["time_h"]))
-    auc_p, auc_h, auc_i = auc(op), auc(om_h), auc(om_i)
+    auc_p, auc_h, auc_i = (float(o["plasma_auc_mg_h_l"][-1]) for o in (op, om_h, om_i))
+    effect = auc_p / auc_h - 1.0
+    convergence = {"4 ms": effect}
+    for dt in (0.002, 0.001):
+        pulse = u.simulate_pulsatile(rec, doses, 24.0, dt_transport_s=dt, sample_every_h=24.0)
+        matched = CirculationUptakeModel(c["pbpk"], heart, mean_flows_l_h=u.mean_transport_flows(rec, dt))
+        steady = matched.simulate_mean(doses, 24.0, dt_h=24.0)
+        convergence[f"{dt * 1000:.0f} ms"] = float(
+            pulse["plasma_auc_mg_h_l"][-1] / steady["plasma_auc_mg_h_l"][-1] - 1.0)
 
     rows = []
     for tk in (0.5, 2.0, 6.0, 12.0, 24.0):
@@ -429,7 +436,7 @@ def waveform_section(c):
                      "mean_mg_l": round(float(om_h["plasma"][im]), 5),
                      "rel": round(float(op["plasma"][ip] / om_h["plasma"][im] - 1.0), 4)})
 
-    # within-beat plasma swing on the settled 3rd cycle after the IV bolus
+    # within-beat plasma swing on the third cycle after the IV bolus
     # (~4 s of simulated time; sampled every 1 ms)
     fine = u.simulate_pulsatile(rec, [Dose(0.0, 5.0, "iv")], 3.5 / 3600.0,
                                 dt_transport_s=0.004, sample_every_h=1e-3 / 3600.0)
@@ -440,18 +447,25 @@ def waveform_section(c):
     report["waveform_effect"] = {
         "authority": "NO external authority: the quantified sensitivity of organ uptake to real "
                      "flow waves (documented approximation: PBPK pool volumes held constant, only "
-                     "the flows modulate), numerically converged (dt 2/1 ms -> 0.0 %)",
+                     "the flows modulate). AUC is integrated within each transport segment.",
+        "auc_mg_h_l": {"pulsatile": auc_p, "matched_mean": auc_h, "icrp_mean": auc_i},
+        "matched_mean_flows_l_h": u_h.flows_mean_l_h,
+        "relative_effect_by_step": convergence,
         "entries": [
             entry("AUC 0-24 h, pulsatile vs mean (SAME heart-mean flows: pure waveform effect)",
-                  "the difference question this layer exists to answer",
-                  f"{auc_p / auc_h - 1:+.1%}", float(auc_p / auc_h - 1.0)),
+                  "steady flows equal the means of the actual sampled transport inputs",
+                  f"{effect:+.4%}", effect),
+            entry("Matched-mean AUC effect at 4, 2 and 1 ms",
+                  "each grid uses its own sampled flow means",
+                  ", ".join(f"{step}: {change:+.5%}" for step, change in convergence.items()),
+                  max(abs(change - effect) for change in convergence.values())),
             entry("AUC 0-24 h, mean-heart flows vs ICRP reference flows (CO/pattern scale effect)",
                   "heart CO %.2f vs ICRP %.2f L/min" % (heart.beat_summary(rec)["cardiac_output_l_min"],
                                                         c["ind"].cardiac_output / 60.0),
                   f"{auc_h / auc_i - 1:+.2%}", float(auc_h / auc_i - 1.0)),
-            entry("within-beat plasma swing, settled cycle 3 of the IV bolus",
+            entry("plasma swing during cycle 3 of the IV bolus",
                   "the beat-scale variation the PC-mean engine cannot resolve",
-                  f"{swing:+.0%}", float(swing)),
+                  f"{swing:+.2%}", float(swing)),
         ],
         "_profile": rows,
     }
@@ -491,7 +505,7 @@ def overlay_section(c):
                   "clinical plasma data (OSP digitized; NOT used to fit the flow layer); "
                   "study nearest the panel-median AUC ratio of validate_body.py",
                   f"AUC pred/obs: mean-stream {r_mean:.2f}, pulse-coupled {r_pul:.2f} "
-                  f"(beat-waveform shift {delta:+.1%}); AAFE {aafe:.2f}",
+                  f"(change vs ICRP mean-flow engine {delta:+.1%}); AAFE {aafe:.2f}",
                   None, "pass" if 0.5 < r_pul < 2.0 else "note"))
         figs[route] = {"t_obs": e["t"], "c_obs": e["obs"],
                        "t_mean": e["sim_t"], "c_mean": e["sim_c"],
@@ -596,16 +610,16 @@ def fig_beat_flows(c):
     loop = [("aortic (LV ejection)", rec.flows[keep, rec.flow_ids.index("aortic")], "tab:red"),
             ("systemic beds (sum of 12)", q_bed, "tab:orange"),
             ("venous return", rec.flows[keep, rec.flow_ids.index("venous_return")], "tab:purple"),
-            ("pulmonic (RV ejection)", rec.flows[keep, rec.flow_ids.index("pulmonic")], "tab:blue")]
+            ("pulmonary bed", rec.flow_at("pulmonary")[keep], "tab:blue")]
     for label, q, col in loop:
         a.plot(ph, q / q.mean(), color=col, lw=1.6, label=f"{label}: {q.mean():.0f} mL/s mean")
     a.axhline(1.0, color="k", lw=.8, ls=":")
     a.set_xlabel("phase in the cardiac cycle (ms)")
     a.set_ylabel("flow / cycle mean (-)")
-    a.set_title("one wave around the closed loop (all 12 beds share it exactly)")
+    a.set_title("flow waves around the closed loop")
     a.legend(fontsize=8); a.grid(alpha=.3)
 
-    # fine within-beat plasma after the IV bolus, settled cycle 3
+    # fine within-beat plasma after the IV bolus, cycle 3
     fine = c["u"].simulate_pulsatile(rec, [Dose(0.0, 5.0, "iv")], 3.5 / 3600.0,
                                      dt_transport_s=0.004, sample_every_h=1e-3 / 3600.0)
     ph2 = fine["time_h"] * 3600.0
@@ -693,10 +707,8 @@ def write_md():
         f'SV {s["sv_ml"]:.1f} mL, EF {s["ef"]:.0%}, LVEDV {s["edv_lv_ml"]:.0f} mL, '
         f'{s["sap_mmhg"]:.0f}/{s["dap_mmhg"]:.0f} mmHg, MAP {s["map_mmhg"]:.1f}, '
         f'RAP {s["mean_p_ra"]:.1f}, LAP {s["mean_p_la"]:.1f}, PAP {s["pap_sys_mmhg"]:.0f}/'
-        f'{s["pap_dia_mmhg"]:.0f} mmHg** -- every quantity within one population SD of the published '
-        "normal column (Broomé et al. 2013 Table 1) except EF and RVEDV at ~1.1-1.25 SD; every output "
-        "is a prediction from components anchored upstream, none is fitted.",
-        "- The whole 24 h beat-coupled drug transport runs in ~0.2 s (regrouped beat algebra).",
+        f'{s["pap_dia_mmhg"]:.0f} mmHg**. Where Broomé Table 1 provides SDs, the model is within '
+        "one SD except for EF and RVEDV. The arterial pressure references have no SD in that table.",
         "- The only quantity with no external authority -- the effect of the real flow *waves* on a",
         f'  24 h plasma profile -- is measured here as {report["waveform_effect"]["entries"][0]["measured"]}'
         " with identical cycle-mean flows (pure waveform effect), documented with its approximations.",
@@ -739,7 +751,7 @@ def write_md():
           "- Pulsatile transport rides the PBPK engine's constant blood-pool volumes; only the flows are",
           "  modulated.  Pool volume waves live in the hydraulic layer (next coupling step); this isolates",
           "  the flow-waveform effect the layer exists to quantify.",
-          "- Boluses land on the transport grid within one segment (~4 ms) of the nominal time.",
+          "- Dose and observation times split transport segments when they fall between grid points.",
           "- E_h bottom-up comes from in-vitro CLint scaled to microsomal protein (Simcyp convention,",
           "  Rowland Yeo 2004) and is mildly lower than the clinical band; the middle-out convention is",
           "  scored in the extraction table.",
@@ -780,11 +792,9 @@ def main():
             "cardiac_output_l_min", "sv_ml", "ef", "edv_lv_ml", "map_mmhg", "sap_mmhg",
             "dap_mmhg", "mean_p_ra", "mean_p_la", "pap_sys_mmhg", "pap_dia_mmhg")},
         "waveform_effect_auc_24h": report["waveform_effect"]["entries"][0]["error"],
-        "note": ("Baseline hemodynamics land inside the published normal column with every "
-                 "parameter anchored upstream and no output fitted.  The drug layer is an exact "
-                 "mirror of the validated PBPK engine at mean flows and conserves mass at the "
-                 "beat scale to 1e-10 mg.  The flow-waveform effect on the plasma profile "
-                 "(-7 % AUC over 24 h) is the layer's documented quantitative prediction."),
+        "note": ("Baseline hemodynamics are compared with published reference values. "
+                 "AUC is integrated within each segment and compared with a steady solver "
+                 "using the same sampled mean flows. The waveform result is a model prediction."),
     }
 
     (DOCS / "validation_circulation.json").write_text(json.dumps(_clean(report), indent=1))

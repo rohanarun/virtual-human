@@ -536,10 +536,14 @@ class HeartCirculation:
         """
         t, P, V = rec.time_s, rec.pressures, rec.volumes
         period = self.period
-        phase = (t - t[0]) % period
-        beat_ids = phase // period
-        masks = [beat_ids == b for b in np.unique(beat_ids)]
-        masks = [m for m in masks if m.sum() > 8]
+        elapsed = t - t[0]
+        beat_ids = np.floor(elapsed / period + 1e-12)
+        # The record excludes its integration endpoint. Allow one recording
+        # interval at the end of a complete cycle and discard trailing fragments.
+        record_step = np.median(np.diff(t)) if len(t) > 1 else 0.0
+        ids = np.unique(beat_ids)
+        complete = (ids + 1) * period <= elapsed[-1] + record_step + 1e-12
+        masks = [beat_ids == b for b in ids[complete]] or [np.ones(len(t), dtype=bool)]
 
         def beat_extreme(nid, fn):
             j = rec.node_ids.index(nid)
@@ -590,15 +594,14 @@ class HeartCirculation:
         out = {}
         for name in self.bed_names:
             out[name] = float(_cycle_mean_flow(rec, f"bed_{name}"))
-        out["lung"] = float(_cycle_mean_flow(rec, "pulmonic"))
+        out["lung"] = float(_cycle_mean_flow(rec, "pulmonary"))
         return out
 
     def sample_flows(self, rec: BeatRecord, t: float) -> dict[str, float]:
         """Instantaneous flows at time t within the beat (repeats cyclically)."""
-        phase = t % self.period
-        i = int(np.min([np.searchsorted(rec.time_s % self.period, phase),
-                        len(rec.time_s) - 1]))
-        return {fid: float(rec.flows[i, j]) for j, fid in enumerate(rec.flow_ids)}
+        elapsed = rec.time_s - rec.time_s[0]
+        return {fid: float(np.interp(t, elapsed, rec.flow_at(fid), period=self.period))
+                for fid in rec.flow_ids}
 
 
 def beat_extreme_rec(rec: BeatRecord, fn, fid: str) -> float:

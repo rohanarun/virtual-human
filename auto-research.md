@@ -35,6 +35,13 @@ Other standing expectations:
 - **From scratch, with a referee.** The value of this project is engines we
   control and can differentiate, proven correct against an independent
   implementation — not wrappers. Add the physics; keep the referee for the test.
+- **Check the experiment's inputs.** A prior circulation result converged while
+  its transport sampler stretched half a beat over the full cycle. For a
+  waveform comparison, check the actual solver inputs against an asymmetric
+  reference over the full period, derive the steady comparator from those
+  exact sampled means, and integrate exposure independently of output cadence.
+  Test dosing between grid points against the prescribed dose integral. Report
+  standard deviations only where the cited source supplies them.
 - **Tests and CI.** New capability ships with tests. Keep `pytest -q` and
   `node web/test_engines.mjs` green.
 - **Honesty about limits.** State what a method cannot do as plainly as what it

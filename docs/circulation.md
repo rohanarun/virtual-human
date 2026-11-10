@@ -60,20 +60,20 @@ of Broomé et al. 2013 (Table 1), a different model's normal values:
 
 | Quantity | Model | Published normal (Broomé 2013, Table 1) |
 |---|---|---|
-| cardiac output | **6.36 L/min** | 6.3 ± 2.4 |
+| cardiac output | **6.35 L/min** | 6.3 ± 2.4 |
 | stroke volume | **90.8 mL** | 89 ± 30 |
 | ejection fraction | **63 %** | 59 ± 4 |
 | LVEDV / RVEDV | **143 / 139 mL** | 123 ± 28 / 111 ± 22 |
-| aortic pressure | **107/70 mmHg** | 112/74 ± 12 |
+| aortic pressure | **107/70 mmHg** | 112/74 |
 | mean RAP / LAP | **3.5 / 5.9 mmHg** | 4.8 ± 2.4 / 8.3 ± 2.5 |
-| pulmonary artery | **22/12 mmHg** | 22 ± 6 / 9 ± 5 |
+| pulmonary artery | **22/12 mmHg** | 22/9 |
 | LV dP/dt max | **1471 mmHg/s** | 1200–2200 (Guyton; Braunwald) |
 | aortic valve open time | **0.30 s** | ~0.3 s systole at HR 70 (Wiggers) |
 
-Every quantity is within one population SD of the published column except EF
-(+1.1 SD) and RVEDV (+1.25 SD); all are within three. The pressure and flow
-waveforms have the published morphology: atrial kick, isovolumic contraction,
-ejection, incisura, E-wave and A-wave.
+For values with a published SD, the model is within one SD except for EF and
+RVEDV, which are within two. The table gives arterial pressure references
+without SDs. The pressure and flow waveforms show atrial contraction,
+isovolumic contraction, ventricular ejection, and filling.
 
 <p align="center">
   <img src="img/circulation_sweeps.png" width="760" alt="Frank-Starling preload sweep and contractility sweeps">
@@ -102,30 +102,28 @@ beat-coupled:               q_i(t) piecewise-constant on a 4 ms grid, exact
 
 Because every edge is a first-order transfer and eliminated amounts are states,
 every transport matrix has exactly zero column sums: total drug is conserved by
-each exponential step, and a 24 h beat-coupled run drifts by **1.6×10⁻¹⁰ mg**.
-The whole 24 h run takes ~0.2 s.
+each exponential step. An infusion uses a constant source over its actual
+scheduled duration. A separate integral accumulates venous plasma AUC within
+each segment, without depending on the output sampling cadence.
 
 <p align="center">
   <img src="img/circulation_beat_flows.png" width="720" alt="Flow waves around the closed loop and the within-beat plasma concentration">
 </p>
 
-The pools filter the ejection pulse: aortic flow peaks at ~7× its mean, but the
-organ beds see only ±20 % and venous return less. The observable consequence at
-the sampling site is small — the venous plasma concentration swings ~3 % within
-a beat. Tissue compartments far from equilibrium in the first seconds after a
-bolus swing much more, but that is a transient of the loading phase, not a
-steady beat effect.
+The pools filter the ejection pulse. The arterial, systemic bed and pulmonary
+bed curves show the flow that moves through different parts of the circuit.
+The lower panel shows plasma variation during the third beat after the IV
+bolus, when the drug is still distributing.
 
-## The one prediction with no external authority
+## Exposure with matched mean flows
 
-How much does the **waveform** of the flow, as opposed to its mean, change a
-plasma profile? That question has no textbook answer to check against, so the
-report measures it with the two solvers locked to the *same cycle-mean flows*:
-the answer is **−7.1 % on the 24 h AUC** of a combined IV + oral midazolam
-profile, converged to 0.00 % under dt halving. The mean engine's own
-(V̇, not waveform) flows differ by +0.3 %, and the beat-coupled curves stay inside
-the mean engine's clinical accuracy band on the representative datasets
-(`validation_circulation.md`).
+The beat-coupled solver samples the entire cycle. Its steady comparator uses
+the arithmetic mean of those same segment inputs for each organ, including the
+pulmonary bed. The matched comparison gives about **−0.005%** for 24-hour AUC
+in the combined IV and oral midazolam scenario. The [validation report](validation_circulation.md)
+records the integrated AUC and the results across transport step sizes. The
+clinical overlays separately compare the model with observed concentrations
+and the existing ICRP mean-flow engine.
 
 <p align="center">
   <img src="img/uptake_overlay.png" width="820" alt="Pulsatile and mean-stream predictions against digitized clinical plasma data">
@@ -144,8 +142,8 @@ the mean engine's clinical accuracy band on the representative datasets
   the PBPK engine's constant blood-pool volumes; only the flows are modulated.
   Circulating pool *volume* waves live in the hydraulic layer and are a
   documented next coupling step — this isolates the flow-waveform effect.
-- **Boluses land on the 4 ms transport grid.** Within one segment (~4 ms) of the
-  nominal time.
+- **Dose and observation times can split a transport segment.** The flow stays
+  constant within the segment and the propagator uses the actual interval length.
 - **Oral absorption is not flow-coupled.** The stomach/intestine chain is the
   validated PBPK one; villous blood flow is not pulsed by the heartbeat. This is
   a neglected second-order coupling, documented rather than hidden.
@@ -158,7 +156,7 @@ the mean engine's clinical accuracy band on the representative datasets
 - `vh/graph/circulation.py` — heart, valves, pools, beds, graph + schema, solver.
 - `vh/graph/uptake.py` — transport matrix, beat algebra, pulsatile/mean solvers,
   organ uptake and extraction.
-- `tests/test_circulation.py` — 27 tests: structural identities, published
+- `tests/test_circulation.py` — tests for structural identities, published
   ranges, sweeps, and the drug-layer identities across both solvers.
 - `scripts/validate_circulation.py` — writes `validation_circulation.json`,
   `validation_circulation.md` and the four figures on this page.

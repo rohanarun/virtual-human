@@ -147,18 +147,18 @@ with `python scripts/validate_flow.py`.
 The same graph, with time-varying-elastance chambers on it, becomes a **closed
 circulation that beats**. Four chambers, four one-way valves, four elastic pools
 and the twelve ICRP organ beds; total blood volume is a linear invariant of the
-equations, so the two ventricles must eject identical strokes — and do (1e-4).
+equations. In a periodic state, both ventricles must eject equal stroke volumes.
 Nothing is fitted to the outputs: valve areas, compliances, Emax/Emin and the
-blood-volume split come from published values, and the joint prediction lands
-inside the published normal column:
+blood-volume split draw on published values. The resting outputs can be compared
+with the published normal references.
 
 | Baseline (ICRP male, 5.3 L blood) | This heart | Published normal (Broomé 2013) |
 |---|---|---|
-| cardiac output | **6.36 L/min** | 6.3 ± 2.4 |
+| cardiac output | **6.35 L/min** | 6.3 ± 2.4 |
 | stroke volume / EF | **91 mL / 63 %** | 89 ± 30 mL / 59 ± 4 % |
-| aortic pressure | **107/70 mmHg** | 112/74 ± 12 |
+| aortic pressure | **107/70 mmHg** | 112/74 |
 | mean RAP / LAP | **3.5 / 5.9 mmHg** | 4.8 ± 2.4 / 8.3 ± 2.5 |
-| pulmonary artery | **22/12 mmHg** | 22 ± 6 / 9 ± 5 |
+| pulmonary artery | **22/12 mmHg** | 22/9 |
 
 <p align="center">
   <img src="docs/img/circulation_wiggers.png" width="640" alt="One cardiac cycle of the beating-heart graph: pressures, volumes, valve flows">
@@ -169,11 +169,10 @@ congests the atrium, and tachycardia shortens the beat. Then the drug layer:
 `vh.graph.uptake` reuses the validated PBPK state, volumes, partitioning and
 clearance, and replaces only the flows with the beat's own q(t) — at ICRP flows
 the transport matrix is **identical** to the validated engine (0.0 difference),
-a 24 h beat-coupled run conserves mass to **1.6×10⁻¹⁰ mg** and takes **0.2 s**.
-The question that needs no textbook — what the flow *waves* (not their means) do
-to a plasma profile — is answered with both solvers locked to the same cycle
-means: **−7.1 % on the 24 h AUC**, converged under dt halving, with the
-beat-coupled curves staying inside the mean engine's clinical accuracy band.
+and the beat-coupled run conserves drug mass. For the reference midazolam
+scenario, using the full beat and matching the steady flow to the actual
+cycle means changes 24-hour plasma exposure by about **−0.005%**. This is a
+sensitivity result for the model under fixed compartment volumes.
 Model, equations and limits: [`docs/circulation.md`](docs/circulation.md);
 measured report: [`docs/validation_circulation.md`](docs/validation_circulation.md);
 plain-language walkthrough with charts:
