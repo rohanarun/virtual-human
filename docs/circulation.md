@@ -162,3 +162,5 @@ the mean engine's clinical accuracy band on the representative datasets
   ranges, sweeps, and the drug-layer identities across both solvers.
 - `scripts/validate_circulation.py` — writes `validation_circulation.json`,
   `validation_circulation.md` and the four figures on this page.
+- `scripts/plot_circulation_explainer.py` — writes the five plain-language
+  charts; the walkthrough is [`circulation_explained.md`](circulation_explained.md).

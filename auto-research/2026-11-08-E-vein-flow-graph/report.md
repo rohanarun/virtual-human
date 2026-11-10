@@ -21,6 +21,9 @@
   `docs/circulation.md`, `docs/validation_circulation.{md,json}`,
   `docs/img/circulation_wiggers.png`, `docs/img/circulation_sweeps.png`,
   `docs/img/circulation_beat_flows.png`, `docs/img/uptake_overlay.png`.
+- **Explainer** (plain-language charts): `docs/circulation_explained.md`,
+  `scripts/plot_circulation_explainer.py`,
+  `docs/img/circulation_explained_{loop,beat,starling,drug,scorecard}.png`.
 
 ## Question
 
@@ -304,7 +307,9 @@ pytest -q                                # full suite: 68 passed, 6 skipped
 Reports: `docs/circulation.md` (model, equations, limits),
 `docs/validation_circulation.md` / `.json` (measured numbers). Figures:
 `docs/img/circulation_wiggers.png`, `circulation_sweeps.png`,
-`circulation_beat_flows.png`, `uptake_overlay.png`.
+`circulation_beat_flows.png`, `uptake_overlay.png`. A plain-language version
+with its own five charts is `docs/circulation_explained.md`; regenerate it with
+`python scripts/plot_circulation_explainer.py`.
 
 ## Sources (addendum)
 

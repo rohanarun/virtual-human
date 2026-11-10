@@ -175,7 +175,9 @@ to a plasma profile — is answered with both solvers locked to the same cycle
 means: **−7.1 % on the 24 h AUC**, converged under dt halving, with the
 beat-coupled curves staying inside the mean engine's clinical accuracy band.
 Model, equations and limits: [`docs/circulation.md`](docs/circulation.md);
-measured report: [`docs/validation_circulation.md`](docs/validation_circulation.md).
+measured report: [`docs/validation_circulation.md`](docs/validation_circulation.md);
+plain-language walkthrough with charts:
+[`docs/circulation_explained.md`](docs/circulation_explained.md).
 Reproduce with `python scripts/validate_circulation.py`.
 
 ## Quick start
