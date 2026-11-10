@@ -129,6 +129,85 @@ and the existing ICRP mean-flow engine.
   <img src="img/uptake_overlay.png" width="820" alt="Pulsatile and mean-stream predictions against digitized clinical plasma data">
 </p>
 
+## Comparison with published measurements
+
+The Broomé comparison above checks plausibility against references that helped
+set the model. As an independent check, we compared the unchanged 30-year-old
+reference male (73 kg, 176 cm, body surface area 1.89 m²) with CMR measurements
+from 196 healthy young men in Le Ven et al., Tables 2 and 4. The reference
+intervals below are the cohort's measured 5th and 95th percentiles.
+[Le Ven et al.](https://doi.org/10.1093/ehjci/jev217)
+
+| Quantity | Simulated | CMR mean ± SD | CMR 5th–95th percentile |
+|---|---:|---:|---:|
+| LV end-diastolic volume / surface area (mL/m²) | 75.8 | 89 ± 13 | 70–112 |
+| LV stroke volume / surface area (mL/m²) | 48.1 | 58 ± 8 | 43–73 |
+| LV ejection fraction (%) | 63.4 | 65 ± 5 | 56–74 |
+| RV end-diastolic volume / surface area (mL/m²) | 73.3 | 101 ± 16 | 78–133 |
+
+Left ventricular measurements fall within the cohort's ranges. Right
+ventricular end-diastolic volume is low even after indexing for body size.
+The source includes trabeculae and the moderator band in the CMR blood pool,
+so the comparison also depends on the definition of chamber volume.
+
+For drug transport, we ran 82 aggregate or representative plasma profiles
+from 45 published studies. The OSP snapshot supplies 21 of 28 IV schedules,
+including Mikus et al.'s 30-minute infusion starting six hours after an oral
+dose. The remaining seven use the original two-minute fallback. We held the
+existing IV clearance multiplier fixed and scored measured and predicted AUC
+over identical positive observation times for each dataset. The oral profiles
+were withheld from the clearance fit. Several profiles share a study.
+[OSP data and protocols](https://github.com/Open-Systems-Pharmacology/Midazolam-Model/blob/cc916b5/Midazolam-Model.json)
+
+| Pulsatile model | Within a factor of two | AUC geometric mean fold error | Median predicted / observed |
+|---|---:|---:|---:|
+| IV, no panel fit | 24/28 | 1.46× | 1.36× |
+| Oral, no panel fit | 44/54 | 1.57× | 1.47× |
+| IV, calibration data | 25/28 | 1.38× | 1.25× |
+| Oral, withheld from IV calibration | 51/54 | 1.37× | 1.25× |
+
+![Observed versus predicted AUC in the full clinical panel](img/circulation_clinical_panel.png)
+
+The ICRP and matched-heart steady controls reach the same twofold counts in
+all four comparisons. Adding pulsation to the matched-heart control changes
+sampled AUC by at most 0.042% across this panel. The data constrain systemic
+exposure. They do not resolve a sub-percent heartbeat effect or concentrations
+inside each organ. The liver extraction estimate is another comparison point:
+0.284 without a panel fit and 0.309 with the IV calibration versus the
+published 0.44 ± 0.14. [Thummel et al.](https://pubmed.ncbi.nlm.nih.gov/8646820/)
+
+See the [per-profile scores](validation_circulation_panel.json) and rerun with
+`python scripts/validate_circulation_panel.py`.
+
+## What can be proved about pulsation
+
+In the fixed-volume PBPK equations, the drug generator is affine in the organ
+flows. Write it as $A+\epsilon B(t+\phi)$, where $A$ uses the cycle-average
+flows, $B$ is periodic with mean zero, and $\epsilon$ scales the pulse
+amplitude. Keep the dose schedule fixed and take its starting phase $\phi$
+uniformly over one heartbeat. **The phase-averaged change in exposure has
+zero first derivative at zero pulse amplitude.** This holds for any finite
+exposure window and any fixed linear concentration readout.
+
+To see it, let $x_0(t)$ be the steady-flow solution. The first variation in
+amounts, $y_\phi(t)=\partial_\epsilon x_{\epsilon,\phi}(t)|_{\epsilon=0}$,
+satisfies $\dot y_\phi=Ay_\phi+B(t+\phi)x_0(t)$ with $y_\phi(0)=0$ before
+any dose. Infusion inputs are unchanged, and the same bolus is added on both
+paths, so $y_\phi$ has no jumps. Variation of constants gives
+
+$$
+y_\phi(t)=\int_0^t e^{A(t-s)} B(s+\phi)x_0(s)\,ds.
+$$
+
+Averaging over $\phi$ sets the integrand's $B$ factor to zero. Integrating
+any linear readout of $y_\phi$ over time therefore gives zero. Bounded
+coefficients on a finite horizon allow a second iteration of the integral
+for the solution and bound the remainder by a constant times $\epsilon^2$.
+The prediction is an at-most-quadratic response of mean exposure to small
+pulses when dose timing is independent of beat phase. The argument applies
+to both continuous and piecewise-constant flow templates. Its assumptions
+are distinct from the single-phase, full-amplitude simulation reported above.
+
 ## Limits
 
 - **Open-loop circulation.** No baroreflex, no chemoreflex, no venoconstriction,
