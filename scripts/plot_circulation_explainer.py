@@ -62,9 +62,7 @@ def build_case():
     s = heart.beat_summary(rec)
     pbpk = PBPKModel(MIDAZOLAM, ind)
     u = CirculationUptakeModel(pbpk, heart)
-    flows_h = {k.replace("mean_flow_bed_", ""): v * 3.6
-               for k, v in s.items() if k.startswith("mean_flow_bed_")}
-    flows_h["lung"] = s["mean_flow_pulmonic"] * 3.6
+    flows_h = u.mean_transport_flows(rec)
     u_mean = CirculationUptakeModel(pbpk, heart, mean_flows_l_h=flows_h)
     return {"ind": ind, "params": params, "heart": heart, "rec": rec, "s": s,
             "pbpk": pbpk, "u": u, "u_mean": u_mean,
@@ -448,8 +446,8 @@ def drug_chart(c):
     om = u_mean.simulate_mean(doses, 24.0, dt_h=0.05)
     t = op["time_h"]
     cp, cm = op["plasma"], om["plasma"]
-    auc = lambda x: float(np.trapezoid(x, t))
-    effect = auc(cp) / auc(cm) - 1.0
+    cum_p, cum_m = op["plasma_auc_mg_h_l"], om["plasma_auc_mg_h_l"]
+    effect = cum_p[-1] / cum_m[-1] - 1.0
 
     fig, axs = plt.subplots(2, 2, figsize=(12.6, 8.2), constrained_layout=True)
     ax, bx, cx, dx = axs.flat
@@ -466,23 +464,20 @@ def drug_chart(c):
                  loc="left", color=INK)
     ax.legend(fontsize=8, frameon=False)
     ax.grid(alpha=0.25, which="both")
-    ax.text(0.97, 0.95, f"24 h AUC: {effect:+.1%}",
+    ax.text(0.97, 0.95, f"24 h AUC: {effect:+.4%}",
             transform=ax.transAxes, ha="right", va="top", fontsize=9,
             color=RED, weight="bold",
             bbox=dict(boxstyle="round,pad=0.35", facecolor="white",
                       edgecolor="#E5B5B5", alpha=0.95))
 
     # -- cumulative AUC effect --------------------------------------------
-    cum_p = np.concatenate([[0.0], np.cumsum(
-        0.5 * (cp[1:] + cp[:-1]) * np.diff(t))])
-    cum_m = np.concatenate([[0.0], np.cumsum(
-        0.5 * (cm[1:] + cm[:-1]) * np.diff(t))])
     with np.errstate(invalid="ignore", divide="ignore"):
         ratio = np.where(cum_m > 0, cum_p / cum_m - 1.0, np.nan)
     bx.plot(t, 100 * ratio, color=RED, lw=2.0)
     bx.axhline(100 * effect, color=INK, lw=0.9, ls=":")
-    bx.text(0.5, 100 * effect + 0.25, f"final {effect:+.1%}", fontsize=8.5,
-            color=INK, va="bottom")
+    bx.annotate(f"final {effect:+.4%}", (t[-1], 100 * effect),
+                xytext=(-8, 6), textcoords="offset points", ha="right",
+                color=INK, fontsize=8.5)
     bx.axhline(0, color=GRAY, lw=0.8)
     bx.set_xlim(0, 24)
     bx.set_xlabel("time (h)")
@@ -554,10 +549,10 @@ def drug_chart(c):
                label="cycle mean")
     dx.set_xlabel("time within one beat (ms)")
     dx.set_ylabel("plasma midazolam (mg/L)")
-    dx.set_title("One beat changes plasma by only 2.7%", fontsize=11.5,
+    dx.set_title("Plasma during the third beat after a bolus", fontsize=11.5,
                  loc="left", color=INK)
     dx.text(0.5, 0.06,
-            f"peak-to-trough {swing:.1%}\n(a post-bolus trend, not a steady ripple)",
+            f"peak-to-trough {swing:.1%}\n(post-bolus distribution)",
             transform=dx.transAxes, ha="center", va="bottom", fontsize=8.5,
             color=RED,
             bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
@@ -611,12 +606,12 @@ def scorecard_chart():
     ax.set_xlim(-3.5, 3.5)
     ax.set_ylim(-0.7, len(rows) - 0.3)
     ax.set_xlabel("distance from the published normal, in population SDs")
-    ax.set_title("Every baseline prediction, against Broomé 2013 Table 1",
+    ax.set_title("Baseline comparisons with published SDs (Broomé 2013, Table 1)",
                  fontsize=12, loc="left", color=INK)
     ax.grid(axis="x", alpha=0.2)
     ax.text(0.99, 0.02,
             "green: within 1 SD   •   amber: 1-3 SD\n"
-            "no output was fitted; only EF and RVEDV go past 1 SD",
+            "arterial pressures have no reported SD",
             transform=ax.transAxes, ha="right", va="bottom", fontsize=8.2,
             color=GRAY)
     fig.savefig(IMG / "circulation_explained_scorecard.png", dpi=150)

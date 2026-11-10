@@ -11,13 +11,12 @@ referees are in [`validation_circulation.md`](validation_circulation.md).
 A heart is **two pumps in series on one closed loop**. We built that loop from
 four chambers whose stiffness changes during a beat, four one-way valves, four
 elastic pools, and the body's twelve organ beds. Filled with 5.3 L of blood and
-beating at 70/min, it predicts a normal resting circulation: **6.36 L/min,
+beating at 70/min, it predicts a normal resting circulation: **6.35 L/min,
 107/70 mmHg, 63 % ejection fraction** — none of it fitted to those answers. Then
 we took the drug model the project had already validated against clinical data
-and let it ride the flows this heart actually makes. At mean flows it is the
-same model, exactly. With the real pulse, a 24 h midazolam profile changes by
-**−7.1 %**. That last number is the new prediction — and unlike the rest, it has
-no textbook answer to check against.
+and let it ride the flows this heart makes. With the full pulse and the same
+average flow in both solvers, 24-hour midazolam exposure changes by about
+**−0.0054%** in the reference simulation.
 
 ## 1. A circulation is a loop, not a tree
 
@@ -131,41 +130,29 @@ with the beat's own $q(t)$. Three things make this a controlled swap:
 
 - At the ICRP reference flows, the new transport matrix is **identical** to the
   validated engine's (largest difference: 0.0).
-- On a flat flow template (every flow held at its mean), the beat solver
-  reproduces the mean solver to $1.3\times10^{-10}$.
-- A 24 h beat-coupled run conserves total drug to $1.6\times10^{-10}$ mg and
-  takes about 0.2 s, because whole beats are regrouped into one exact matrix
-  power.
+- On a flat flow template, the beat solver reproduces the steady solver.
+- The beat-coupled run conserves total drug, including drug already eliminated.
+  Whole beats can be advanced together using a matrix power.
 
 <p align="center">
   <img src="img/circulation_explained_drug.png" width="900" alt="Pulse-coupled vs mean-flow plasma profiles, cumulative AUC difference, flow pulsatility around the loop, and the within-beat plasma change">
 </p>
 
-Now the interesting question: **does the shape of the flow wave matter, or only
-its average?** To answer it we ran the two solvers with *exactly the same
-cycle-mean flows* — one with the real pulse, one with a flat line. The
-difference is a pure waveform effect. Over 24 h, for a combined 5 mg IV plus
-7.5 mg oral midazolam dose, the pulse-coupled AUC is **7.1 % lower**.
+Does pulsing the flow matter if the average stays the same? The steady solver
+uses the exact average of each organ's sampled flow over a full beat. Both
+solvers accumulate AUC, the area under the plasma concentration curve, during
+transport. For 5 mg IV plus 7.5 mg oral midazolam, the difference over 24 hours
+is about **−0.0054%**. The earlier −7.1% comparison stretched half a heartbeat
+across the full period and raised mean flow. The corrected result is stable at
+4, 2 and 1 ms transport steps and is a prediction of this model.
 
-Why so small? The elastic pools are low-pass filters. Aortic flow peaks at
-**7× its mean** during ejection, but by the time the wave reaches the organ
-beds it is only **1.2×**, and venous return is 1.3×. The enzymes and transporters
-mostly see the average. The bottom-right panel makes the same point at the
-sampling vein: within one beat after a bolus, plasma changes by 2.7 %, but the
-curve falls monotonically — this is the fast post-bolus distribution phase, not
-a steady beat-to-beat oscillation.
+The elastic pools smooth the ejection pulse before it reaches the organ beds.
+The lower right panel shows plasma during the third beat after a bolus, while
+the drug is distributing. Its peak-to-trough change includes that transient.
 
-This −7.1 % is the one quantity in the whole layer with **no external
-authority**. There is no textbook value for "the waveform effect on a 24 h
-midazolam AUC". It is a quantitative prediction of the model, checked for
-numerical convergence (halving the time step changes it by less than 0.001 %)
-and anchored to identical mean flows, but not validated against an independent
-measurement. The report says so explicitly.
-
-Against clinical data, the beat-coupled curves stay inside the mean engine's
-accuracy band: on the Olkkola 1993 control arms the AUC prediction/observation
-ratios are **1.39 (IV)** and **1.07 (oral)**, versus 1.25 and 1.15 for the
-mean-flow engine.
+On the Olkkola 1993 control arms, the pulsatile AUC prediction/observation
+ratios are **1.26 (IV)** and **1.15 (oral)**. The ICRP mean-flow engine gives
+1.25 and 1.15. This clinical comparison includes differences in average flow.
 
 ## 5. Why believe the baseline
 
@@ -176,22 +163,22 @@ normal column of Broomé et al. 2013, Table 1, which is a different model's
 normal values.
 
 <p align="center">
-  <img src="img/circulation_explained_scorecard.png" width="820" alt="Every baseline prediction expressed as distance from the published normal in population standard deviations">
+  <img src="img/circulation_explained_scorecard.png" width="820" alt="Baseline differences for quantities with published standard deviations">
 </p>
 
-Every quantity lands within one population SD of the published normal, except
-ejection fraction (+1.10 SD) and right-ventricular end-diastolic volume
-(+1.25 SD); every one is inside three. The model also satisfies identities that
-any correct implementation must satisfy, at machine precision:
+Where the table gives an SD, the model is within one SD except for ejection
+fraction and right-ventricular end-diastolic volume, which are within two. The
+arterial pressure references have no SD in that table. The simulation also
+checks conservation and agreement with the existing drug transport matrix.
 
 | Identity | Measured |
 |---|---|
 | Total blood volume is conserved over 8 beats | **1.6×10⁻¹¹ mL drift** |
-| The two ventricles eject the same stroke volume | 1.0×10⁻⁴ relative |
+| The two ventricles eject the same stroke volume | 6.5×10⁻⁵ relative |
 | Closed valves carry exactly zero flow | **0** mL/s |
 | Every organ's share of flow equals its ICRP share at every instant | **2.2×10⁻¹⁶** relative |
 | At ICRP flows, the drug matrix equals the validated PBPK matrix | **0.0** |
-| 24 h of beat-coupled drug transport conserves mass | **1.6×10⁻¹⁰ mg** |
+| 24 h of beat-coupled drug transport conserves mass | **about 10⁻¹⁰ mg** |
 
 The last two matter because they separate "new physiology" from "new plumbing".
 The circulation is new; the pharmacokinetics is the engine that was already
@@ -214,9 +201,8 @@ validated, wearing the heart's flows.
   compliances and impedances, so their pulse waveforms differ by organ. The
   *mean* split is the validated ICRP one; the pulse *shape* per organ is a
   simplification.
-- **The −7.1 % waveform effect has no independent referee.** Its convergence and
-  its exact-mean-flow control are what is checked; its magnitude is not
-  externally validated.
+- **The waveform comparison checks numerical convergence and matched means.**
+  The magnitude remains a model prediction.
 - **Hepatic extraction is slightly low.** The bottom-up in-vitro clearance gives
   an extraction ratio of 0.284, just below the published 0.30–0.50 band; the
   one-factor middle-out calibration gives 0.309. Both are reported.
@@ -226,7 +212,7 @@ validated, wearing the heart's flows.
 ```bash
 python scripts/validate_circulation.py        # the full report + validation figures
 python scripts/plot_circulation_explainer.py  # the five charts on this page
-pytest -q tests/test_circulation.py           # 27 tests
+pytest -q tests/test_circulation.py
 ```
 
 The core API:
